@@ -41,8 +41,8 @@
                                 simulates basic evolution. After giving an initial configuration of alive or dead cells, the pattern evolves
                                 based on a set number of rules governed by the neighbors of each cell:</p>
                             <ol>
-                                <li>A cell with <MATH><= 1</MATH> living neighbors <u>(underpopulation)</u></li>
-                                <li>A cell with <MATH>>= 4</MATH> living neighbors dies <u>(overpopulation)</u></li>
+                                <li>A cell with <h:math><= 1</h:math> living neighbors <u>(underpopulation)</u></li>
+                                <li>A cell with <h:math>>= 4</h:math> living neighbors dies <u>(overpopulation)</u></li>
                                 <li>An empty cell with exactly 3 living neighbors becomes alive <u>(reproduction)</u></li>
                             </ol>
                             <p>Despite this basic ruleset, there have been many different types of patterns found through studies: still lifes, which do not move; oscillators, which have a periodic form of motion; and spaceships, which drift in a consistent manner across space. Some initial patterns can also lead to infinite growth, where the bounding box of the pattern grows at each timestep.</p>
@@ -51,6 +51,7 @@
                             <p>Conway's Game of Life is fairly simple in 2D, as there are only 8 neighbors and 2 axes (x- and y-axis). However, adapting to 3D -- increasing the number of neighbors from 8 to 26 and multiplying the size of the grid by another factor -- greatly increases communication intensity. Furthermore, the z-axis can now be an added area of parallelism.</p>
                             <p>Another area for potential speedup is the idea converging or stable structures that form in Conway's Game of Life. In the 2D model, all starting states gradually converged to stable structures. Similarly, in 3D, all starting states will also generally remain stable after a certain time, meaning that there will be no need to pass information about empty spaces around unless they are immediate neighbors.</p>
                             <h2>The Challenge</h2>
+                            <p>As stated previously, scaling to 3D increases the areas of parallelism and the achievable theoretical speedup. By increasing the number of dimensions, we increase the number of neighbors (8 to 26), meaning we must do more than 3 times as much communication. Furthermore, the number of cells increase from <h:math>N^2</h:math> to <h:math>N^3</h:math>, potentially creating a memory constraint if <h:math>N</h:math> becomes large enough.</p>
 						</div>
 					</section>
 
