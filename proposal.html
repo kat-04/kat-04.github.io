@@ -66,6 +66,23 @@
                             </ol>
                             <h3>Hope to Achieve</h3>
                             <p>While not strictly necessary for this project, we would like to achieve some of the following as well.</p>
+                            <ol>
+                                <li><u>Parallel MPI Implementation</u> - If we have a siginificant amount of extra time, we would like to create a third parallel implementation based on MPI. It would add to our speedup analysis of our main two parallel implementations. </li>
+                                <li><u>Interactive Visualizations in OpenGL</u> - This would expand upon the basic debugging renderer and allow for more interactivity. You would be able to rotate the cube while it simulates and it would be more visually polished. This would be a great way to show off our results.</li>
+                                <li><u>Experimentation with Various Rulesets</u> - We would like to try implementing variations on the traditional game ruleset. Not only would this be visually interesting, but it would also allow further analysis of how our code performs more generally. Changing the ruleset can impact the density of living cells, the way in which they group together, and how the simulation changes over time. All of these factors have the potential to impact the performance of our implementations due to changes in workload imbalance and communication costs. </li>
+                                <li><u>Integrating OpenGL rendering with our CUDA implementation</u> - CUDA and OpenGL can work well together as they both make significant use of the GPU. OpenGL has the capability to directly access CUDA GPU memory and significantly speed up the rendering process. Our planned implementation does not take advantage of this compatibility. We would like to see how integrating the CUDA simulation and OpenGL rendering code affects performance if we have time. </li>
+                            </ol>
+                            <h3>Demo</h3>
+                            <p>In terms of speedup analysis, we will have graphs that show how our sequential and parallel implementations perform in a variety of scenarios. Varying cube size and starting configurations can all impact performance in different ways. By measuring how each implementation handles these changes, we can provide a more complete picture of our final results. We will also have a small discussion about the relative strengths and weaknesses of both parallel implementations. </p>
+                            <p>Visually, we will have at a minimum our simple debugging renderer in OpenGL to showcase some of the simulations. Hopefully, we will have time to polish this a little more for the final demo. </p>
+                            <h3>Analysis</h3>
+                            <p>This project will help us better our understanding of the relative strengths and weaknesses of OpenMP and CUDA as we analyze our results. Specifically, we will see how these implementations perform large tasks that involves a high communication-to-communication ratio and workload imbalance.</p>
+                            <h3>Performance Goals</h3>
+                            <p>While concrete speedups for our two implementations are difficult to estimate, we hope to achieve at least a 10$\times$ speedup for both the CUDA and OpenMP implementations. In theory each cell could be perfectly parallelized and lead to much more than a 10x improvement, but we predict that high communication costs and workload imbalance will limit our implementations. Thus, 10x speedup is a reasonable goal that shows significant improvement over the sequential implementation while still accounting for limiting factors. </p>
+                            <h2>Platform Choice</h2>
+                            <p>For the sequential implementation, we will code in C++ and measure it on the PSC machines (CPU). For the CUDA implementation, we will code in CUDA and measure it on the PSC machines (GPU). Finally, for the OpenMP implementation, we will code in OpenMP and measure it on the PSC machines (CPU). The renderer will be made using OpenGL.</p>
+                            <h2>Schedule</h2>
+                            
                         </div>
 					</section>
 
