@@ -51,7 +51,12 @@
                             <p>Another area for potential speedup is the idea converging or stable structures that form in Conway's Game of Life. In the 2D model, all starting states gradually converged to stable structures. Similarly, in 3D, all starting states will also generally remain stable after a certain time, meaning that there will be no need to pass information about empty spaces around unless they are immediate neighbors.</p>
                             <h2>The Challenge</h2>
                             <p>As stated previously, scaling to 3D increases the areas of parallelism and the achievable theoretical speedup. By increasing the number of dimensions, we increase the number of neighbors (8 to 26), meaning we must do more than 3 times as much communication. Furthermore, the number of cells increase from $N^2$ to $N^3$, potentially creating a memory constraint if $N$ becomes large enough.</p>
-						</div>
+                            <p>The main workload of this project revolves around managing locality. Since all computation relies on the state of the neighbors of a cell at any given time, our project has a very high communication-to-computation ratio.</p>
+                            <p>There are also constraints to the workload. There are many possible patterns that the cellular structures can stably converge to, as the cells tend to group around their immediate neighbors. This situation immediately gives rise to the possibility of workload imbalance, as areas with alive cells will need to communicate more than areas with only dead cells (note how all the rules for 2D Conway's Game of Life are based on the number of alive neighbors). </p>
+                            <h2>Resources</h2>
+                            <p>Some basic aspects of our projects 2 (CUDA) and 3 (OpenMP) are naturally similar due to their methods of parallelism, so we will use them as reference. Our past assignments using CUDA kernels and OpenMP pragmas for 2D programs will help us extend our knowledge to a 3D program. </p>
+                            <p>We have also found a couple of online resources that will be useful. The first website <a href="https://cs.brown.edu/courses/cs195v/projects/life/edwallac/index.html">here</a> describes some interesting extensions of the original ruleset for the 3D version. Another website  <a href="\href{https://shankarrajagopal.github.io/DOWNLOAD/CG_LAB_P3.pdf">here</a> provides a useful guide to rendering in OpenGL, which we would like to build upon to render our results.</p>
+                        </div>
 					</section>
 
 			</div>
