@@ -56,6 +56,17 @@
                             <h2>Resources</h2>
                             <p>Some basic aspects of our projects 2 (CUDA) and 3 (OpenMP) are naturally similar due to their methods of parallelism, so we will use them as reference. Our past assignments using CUDA kernels and OpenMP pragmas for 2D programs will help us extend our knowledge to a 3D program. </p>
                             <p>We have also found a couple of online resources that will be useful. The first website <a href="https://cs.brown.edu/courses/cs195v/projects/life/edwallac/index.html">here</a> describes some interesting extensions of the original ruleset for the 3D version. Another website  <a href="\href{https://shankarrajagopal.github.io/DOWNLOAD/CG_LAB_P3.pdf">here</a> provides a useful guide to rendering in OpenGL, which we would like to build upon to render our results.</p>
+                            <h2>Goals and Deliverables</h2>
+                            <h3>Plan to Achieve</h3>
+                            <p>We expect to achieve the following tasks within the time frame. Note that all three implementations should output their results in a common text format so that we can judge correctness and easily render results. </p>
+                            <ol>
+                                <li><u>Sequential Implementation</u> - a naive, sequential implementation of the 3D Game of Life that can be used as a comparison to our parallel implementations. </li>
+                                <li><u>Parallel CUDA Implementation</u> - a parallel implementation of the 3D Game of Life in CUDA that achieves significant speedup in comparison to our sequential version. It should work to minimize computation and workload imbalance. </li>
+                                <li><u>Parallel OpenMP Implementation</u> - a parallel implementation of the 3D Game of Life in OpenMP that achieves significant speedup in comparison to our sequential version. Similarly, it should work to minimize computation and workload imbalance.</li>
+                                <li><u>Visualizations for Debugging Purposes in OpenGL</u> - a basic, non-interactive renderer of our output data that visualizes the cube and each simulation step. This is an important step to ensure correctness of our implementations and it allows for visual debugging.</li>
+                            </ol>
+                            <h3>Hope to Achieve</h3>
+                            <p>While not strictly necessary for this project, we would like to achieve some of the following as well.</p>
                         </div>
 					</section>
 
