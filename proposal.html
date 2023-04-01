@@ -41,8 +41,8 @@
                                 simulates basic evolution. After giving an initial configuration of alive or dead cells, the pattern evolves
                                 based on a set number of rules governed by the neighbors of each cell:</p>
                             <ol>
-                                <li>A cell with <h:math>\leq 1</h:math> living neighbors <i>(underpopulation)</i></li>
-                                <li>A cell with <h:math>\geq 4</h:math> living neighbors dies <i>(overpopulation)</i></li>
+                                <li>A cell with <h:math>&le; 1</h:math> living neighbors <i>(underpopulation)</i></li>
+                                <li>A cell with <h:math>&ge; 4</h:math> living neighbors dies <i>(overpopulation)</i></li>
                                 <li>An empty cell with exactly 3 living neighbors becomes alive <i>(reproduction)</i></li>
                             </ol>
                             <p><span class="image right"><img src="images/oscillatorExample.jpg" alt="" /></span>Despite this basic ruleset, there have been many different types of patterns found through studies: still lifes, which do not move; oscillators, which have a periodic form of motion; and spaceships, which drift in a consistent manner across space. Some initial patterns can also lead to infinite growth, where the bounding box of the pattern grows at each timestep. One example of a basic oscillator is shown to the right.</p>
