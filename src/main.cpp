@@ -155,17 +155,26 @@ int main(int argc, char** argv)
                 for (int z = 0; z < sideLength; z++) {
                     //get neighbor sum
                     numAlive = 0;
-                    for (int i = x - 1; i <= x + 1; i++) {
-                        for (int j = y - 1; j <= y + 1; j++) {
-                            for (int k = z - 1; k <= z + 1; k++) {
-                                if (i >= 0 && j >= 0 && k >= 0 && i < sideLength && j < sideLength && k < sideLength) {
-                                    //TODO: modify neighbor set for non-Moore neighborhoods
-                                    if (!(x == i && y == j && z == k)) { //don't include self
-                                        numAlive += cube[i][j][k] ? 1 : 0;
+                    if (isMoore) {
+                        for (int i = x - 1; i <= x + 1; i++) {
+                            for (int j = y - 1; j <= y + 1; j++) {
+                                for (int k = z - 1; k <= z + 1; k++) {
+                                    if (i >= 0 && j >= 0 && k >= 0 && i < sideLength && j < sideLength && k < sideLength) {
+                                        if (!(x == i && y == j && z == k)) { //don't include self
+                                            numAlive += cube[i][j][k] ? 1 : 0;
+                                        }
                                     }
                                 }
                             }
                         }
+                    } else {
+                        //von neumann neighborhood
+                        numAlive += (x - 1 >= 0 && cube[x-1][y][z]) ? 1 : 0;
+                        numAlive += (x + 1 < sideLength && cube[x+1][y][z]) ? 1 : 0;
+                        numAlive += (y - 1 >= 0 && cube[x][y-1][z]) ? 1 : 0;
+                        numAlive += (y + 1 < sideLength && cube[x][y+1][z]) ? 1 : 0;
+                        numAlive += (z - 1 >= 0 && cube[x][y][z-1]) ? 1 : 0;
+                        numAlive += (z + 1 < sideLength && cube[x][y][z+1]) ? 1 : 0;
                     }
 
                     //update voxel based on rules
