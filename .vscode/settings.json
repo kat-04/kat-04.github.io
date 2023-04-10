@@ -3,6 +3,10 @@
         "vector": "cpp",
         "__split_buffer": "cpp",
         "deque": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "iosfwd": "cpp",
+        "map": "cpp",
+        "iostream": "cpp",
+        "__bit_reference": "cpp"
     }
 }

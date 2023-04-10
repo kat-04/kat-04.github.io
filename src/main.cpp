@@ -3,10 +3,16 @@
 #include <getopt.h>
 #include <string>
 #include <iostream>
+#include <map>
+#include <tuple>
 #include <fstream>
 #include <GL/glew.h> // include GLEW and new version of GL on Windows
 #include <GLFW/glfw3.h> // GLFW helper library for window management
 #include <iostream> //for cout
+
+//RULE FORMAT: survival/birth/numStates/isMoore
+//MAP FORMAT: keys 0-26 -> birth for that num neighbors,
+//            keys 27-54 -> survival for that num neighbors
 
 using namespace std; 
 
@@ -14,21 +20,60 @@ void printVoxel(int x, int y, int z, bool alive) {
     cout << x << ", " << y << ", " << z << ", alive: " << alive << endl;
 }
 
-vector<int> tokenizeVoxelCoords(string &line) {
-    vector<int> out;
-    const char* delim = " ";
+vector<string> tokenizeLine(string &line, const char* delim) {
+    vector<string> out;
     char *token = strtok(const_cast<char*>(line.c_str()), delim); 
     while (token != nullptr) 
     { 
-        out.push_back(stoi(string(token))); 
+        out.push_back(string(token)); 
         token = strtok(nullptr, delim); 
     } 
     return out;
 }
 
-//TODO: actually deal with rulesets, return true iff should be alive
-bool voxelUpdateStatus(int numNeighbors) {
-    return true;
+tuple<map<int, bool>, bool, int> parseRules(string line) {
+    const char* slashDelim = "/";
+    const char* commaDelim = ",";
+    const char* dashDelim = "-";
+    map<int, bool> ruleMap;
+
+    vector<string> rules = tokenizeLine(line, slashDelim);
+    string survival = rules[0];
+    string birth = rules[1];
+    int numStates = stoi(rules[2]);
+    bool isMoore = (rules[3] == "M");
+
+    //init map
+    for (int i = 0; i < 54; i++) {
+        ruleMap[i] = false;
+    }
+
+    //parse survival and birth rules
+    vector<string> survivalSubsets = tokenizeLine(survival, commaDelim);
+    vector<string> birthSubsets = tokenizeLine(birth, commaDelim);
+    for (int i = 0; i < birthSubsets.size(); i++) {
+        if (birthSubsets[i].find('-') == string::npos) {    
+            ruleMap[stoi(birthSubsets[i])] = true;
+        } else {
+            vector<string> range = tokenizeLine(birthSubsets[i], dashDelim);
+            for (int j = stoi(range[0]); j <= stoi(range[1]); j++) {
+                ruleMap[j] = true;
+            }
+        }
+    }
+
+    for (int i = 0; i < survivalSubsets.size(); i++) {
+        if (survivalSubsets[i].find('-') == string::npos) {    
+            ruleMap[27 + stoi(survivalSubsets[i])] = true;
+        } else {
+            vector<string> range = tokenizeLine(survivalSubsets[i], dashDelim);
+            for (int j = 27 + stoi(range[0]); j <= 27 + stoi(range[1]); j++) {
+                ruleMap[j] = true;
+            }
+        }
+    }  
+
+    return make_tuple(ruleMap, isMoore, numStates);
 }
 
 
@@ -46,10 +91,20 @@ int main(int argc, char** argv)
     int sideLength = stoi(argv[3]);
     string outputPath = "./output-files/frame";
     string frameOutputFile; 
+    const char* spaceDelim = " ";
+    
 
     //init cube structure
-    bool cube[sideLength][sideLength][sideLength];
-    memset(cube, 0, sizeof(cube));
+    vector<vector<vector<bool>>> cube(sideLength);
+    vector<vector<vector<bool>>> newCube(sideLength);
+    for (int i = 0; i < sideLength; i++) {
+        cube[i] = vector<vector<bool>>(sideLength); 
+        newCube[i] = vector<vector<bool>>(sideLength); 
+        for (int j = 0; j < sideLength; j++) {
+            cube[i][j] = vector<bool>(sideLength);
+            newCube[i][j] = vector<bool>(sideLength);
+        }
+    }
 
     //parse input file
     fstream input;
@@ -60,20 +115,24 @@ int main(int argc, char** argv)
     }
     string line;
     int curLine = 0;
-    vector<int> coords;
+    vector<string> coords;
 
     //write frame0 to be same status as input (updates start at frame1)
     frameOutputFile = outputPath + "0.txt";
     ofstream outputInit; 
     outputInit.open(frameOutputFile);
+    map<int, bool> ruleMap;
+    int numStates;
+    bool isMoore;
 
     while (getline(input, line)) {
         if (curLine == 0) {
-            //TODO: parse ruleset
+            tie(ruleMap, isMoore, numStates) = parseRules(line);
         } else {
             //set voxel to on
-            coords = tokenizeVoxelCoords(line);
-            cube[coords[0]][coords[1]][coords[2]] = true;
+            coords = tokenizeLine(line, spaceDelim);
+            //TODO: should probably check for out of bounds input here and error
+            cube[stoi(coords[0])][stoi(coords[1])][stoi(coords[2])] = true;
             outputInit << coords[0] << " " << coords[1] << " " << coords[2] << endl;
         }
         curLine++;
@@ -100,15 +159,18 @@ int main(int argc, char** argv)
                         for (int j = y - 1; j <= y + 1; j++) {
                             for (int k = z - 1; k <= z + 1; k++) {
                                 if (i >= 0 && j >= 0 && k >= 0 && i < sideLength && j < sideLength && k < sideLength) {
-                                    numAlive += cube[i][j][k] ? 1 : 0;
+                                    //TODO: modify neighbor set for non-Moore neighborhoods
+                                    if (!(x == i && y == j && z == k)) { //don't include self
+                                        numAlive += cube[i][j][k] ? 1 : 0;
+                                    }
                                 }
                             }
                         }
                     }
 
                     //update voxel based on rules
-                    voxelStatus = voxelUpdateStatus(numAlive);   
-                    cube[x][y][z] = voxelStatus;  
+                    voxelStatus = ruleMap[(cube[x][y][z] ? 27 : 0) + numAlive];
+                    newCube[x][y][z] = voxelStatus;  
 
                     //output for frame if on
                     if (voxelStatus) {
@@ -120,6 +182,8 @@ int main(int argc, char** argv)
             }
         }
         output.close();
+        cube.swap(newCube);
+
     }
     return 0;
 }

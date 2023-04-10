@@ -62,7 +62,7 @@ all: $(EXECUTABLE)
 
 ARCH=$(shell uname | sed -e 's/-.*//g')
 OBJDIR=objs
-CXX=g++ -m64
+CXX=g++ -m64 -std=c++17
 CXXFLAGS=-O3 -Wall -g -lglfw -lGLEW -framework OpenGL
 HOSTNAME=$(shell hostname)
 
