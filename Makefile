@@ -49,12 +49,13 @@
 # FILES = src/*.cpp \
 # 		src/*.h
 
-EXECUTABLE := gol-seq
+EXECUTABLE := gol
 # LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -lcudart
 # CU_FILES   := gol.cu
 # CU_DEPS    :=
 CC_FILES   := src/main.cpp src/gol-sequential.cpp
 LOGS	   := logs
+OUTPUT     := output-files
 
 all: $(EXECUTABLE)
 
@@ -85,19 +86,19 @@ OBJS=$(OBJDIR)/main.o
 
 .PHONY: dirs clean
 
-default: $(EXECUTABLE)
+all: $(EXECUTABLE) 
 
 dirs:
-		mkdir -p $(OBJDIR)/
+		mkdir -p $(OBJDIR)/ $(OUTPUT)/
 
 clean:
-		rm -rf $(OBJDIR) *~ $(EXECUTABLE) $(LOGS)
+		rm -rf $(OBJDIR) *~ $(EXECUTABLE) $(LOGS) $(OUTPUT)
 
 export: $(EXFILES)
 	cp -p $(EXFILES) $(STARTER)
 
 
-$(EXECUTABLE): dirs $(OBJS)
+$(EXECUTABLE): clean dirs $(OBJS)
 		$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
 		# $(LDFLAGS) $(LDLIBS) $(LDFRAMEWORKS)
 
