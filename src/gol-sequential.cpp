@@ -126,10 +126,11 @@ int golSequential(int argc, char** argv)
     map<int, bool> ruleMap;
     int numStates;
     bool isMoore;
-
     while (getline(input, line)) {
         if (curLine == 0) {
             tie(ruleMap, isMoore, numStates) = parseRules(line);
+            
+            outputInit << sideLength << endl;
         } else {
             //set voxel to on
             coords = tokenizeLine(line, spaceDelim);
@@ -152,6 +153,7 @@ int golSequential(int argc, char** argv)
         frameOutputFile = outputPath + to_string(f+1) + ".txt";
         ofstream output; 
         output.open(frameOutputFile);
+        output << sideLength << endl;
         //timer start
         double frameTime = 0.0;
         Timer frameTimer;
