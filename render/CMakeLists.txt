@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+set (CMAKE_CXX_STANDARD 17)
 project(GOL3D)
 
 # Add source files
@@ -10,7 +11,8 @@ project(GOL3D)
 include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
 
-add_executable(GOL3D render_cube.cpp)
+# add_executable(GOL3D render_cube.cpp)
+add_executable(GOL3D src/mesh.cpp)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS} )

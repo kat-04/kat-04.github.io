@@ -69,28 +69,28 @@ include CMakeFiles/GOL3D.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/GOL3D.dir/flags.make
 
-CMakeFiles/GOL3D.dir/render_cube.cpp.o: CMakeFiles/GOL3D.dir/flags.make
-CMakeFiles/GOL3D.dir/render_cube.cpp.o: render_cube.cpp
-CMakeFiles/GOL3D.dir/render_cube.cpp.o: CMakeFiles/GOL3D.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/katherinelu/Documents/15418/kat-04.github.io/render/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/GOL3D.dir/render_cube.cpp.o"
-	/Library/Developer/CommandLineTools/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GOL3D.dir/render_cube.cpp.o -MF CMakeFiles/GOL3D.dir/render_cube.cpp.o.d -o CMakeFiles/GOL3D.dir/render_cube.cpp.o -c /Users/katherinelu/Documents/15418/kat-04.github.io/render/render_cube.cpp
+CMakeFiles/GOL3D.dir/src/mesh.cpp.o: CMakeFiles/GOL3D.dir/flags.make
+CMakeFiles/GOL3D.dir/src/mesh.cpp.o: src/mesh.cpp
+CMakeFiles/GOL3D.dir/src/mesh.cpp.o: CMakeFiles/GOL3D.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/katherinelu/Documents/15418/kat-04.github.io/render/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/GOL3D.dir/src/mesh.cpp.o"
+	/Library/Developer/CommandLineTools/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GOL3D.dir/src/mesh.cpp.o -MF CMakeFiles/GOL3D.dir/src/mesh.cpp.o.d -o CMakeFiles/GOL3D.dir/src/mesh.cpp.o -c /Users/katherinelu/Documents/15418/kat-04.github.io/render/src/mesh.cpp
 
-CMakeFiles/GOL3D.dir/render_cube.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/GOL3D.dir/render_cube.cpp.i"
-	/Library/Developer/CommandLineTools/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/katherinelu/Documents/15418/kat-04.github.io/render/render_cube.cpp > CMakeFiles/GOL3D.dir/render_cube.cpp.i
+CMakeFiles/GOL3D.dir/src/mesh.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/GOL3D.dir/src/mesh.cpp.i"
+	/Library/Developer/CommandLineTools/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/katherinelu/Documents/15418/kat-04.github.io/render/src/mesh.cpp > CMakeFiles/GOL3D.dir/src/mesh.cpp.i
 
-CMakeFiles/GOL3D.dir/render_cube.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/GOL3D.dir/render_cube.cpp.s"
-	/Library/Developer/CommandLineTools/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/katherinelu/Documents/15418/kat-04.github.io/render/render_cube.cpp -o CMakeFiles/GOL3D.dir/render_cube.cpp.s
+CMakeFiles/GOL3D.dir/src/mesh.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/GOL3D.dir/src/mesh.cpp.s"
+	/Library/Developer/CommandLineTools/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/katherinelu/Documents/15418/kat-04.github.io/render/src/mesh.cpp -o CMakeFiles/GOL3D.dir/src/mesh.cpp.s
 
 # Object files for target GOL3D
 GOL3D_OBJECTS = \
-"CMakeFiles/GOL3D.dir/render_cube.cpp.o"
+"CMakeFiles/GOL3D.dir/src/mesh.cpp.o"
 
 # External object files for target GOL3D
 GOL3D_EXTERNAL_OBJECTS =
 
-GOL3D: CMakeFiles/GOL3D.dir/render_cube.cpp.o
+GOL3D: CMakeFiles/GOL3D.dir/src/mesh.cpp.o
 GOL3D: CMakeFiles/GOL3D.dir/build.make
 GOL3D: CMakeFiles/GOL3D.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/katherinelu/Documents/15418/kat-04.github.io/render/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable GOL3D"

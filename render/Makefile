@@ -129,29 +129,29 @@ GOL3D/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/GOL3D.dir/build.make CMakeFiles/GOL3D.dir/build
 .PHONY : GOL3D/fast
 
-render_cube.o: render_cube.cpp.o
-.PHONY : render_cube.o
+src/mesh.o: src/mesh.cpp.o
+.PHONY : src/mesh.o
 
 # target to build an object file
-render_cube.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GOL3D.dir/build.make CMakeFiles/GOL3D.dir/render_cube.cpp.o
-.PHONY : render_cube.cpp.o
+src/mesh.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GOL3D.dir/build.make CMakeFiles/GOL3D.dir/src/mesh.cpp.o
+.PHONY : src/mesh.cpp.o
 
-render_cube.i: render_cube.cpp.i
-.PHONY : render_cube.i
+src/mesh.i: src/mesh.cpp.i
+.PHONY : src/mesh.i
 
 # target to preprocess a source file
-render_cube.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GOL3D.dir/build.make CMakeFiles/GOL3D.dir/render_cube.cpp.i
-.PHONY : render_cube.cpp.i
+src/mesh.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GOL3D.dir/build.make CMakeFiles/GOL3D.dir/src/mesh.cpp.i
+.PHONY : src/mesh.cpp.i
 
-render_cube.s: render_cube.cpp.s
-.PHONY : render_cube.s
+src/mesh.s: src/mesh.cpp.s
+.PHONY : src/mesh.s
 
 # target to generate assembly for a file
-render_cube.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GOL3D.dir/build.make CMakeFiles/GOL3D.dir/render_cube.cpp.s
-.PHONY : render_cube.cpp.s
+src/mesh.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GOL3D.dir/build.make CMakeFiles/GOL3D.dir/src/mesh.cpp.s
+.PHONY : src/mesh.cpp.s
 
 # Help Target
 help:
@@ -162,9 +162,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... GOL3D"
-	@echo "... render_cube.o"
-	@echo "... render_cube.i"
-	@echo "... render_cube.s"
+	@echo "... src/mesh.o"
+	@echo "... src/mesh.i"
+	@echo "... src/mesh.s"
 .PHONY : help
 
 

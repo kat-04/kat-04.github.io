@@ -82,6 +82,13 @@ int main(){
         );
         // Draw the triangle !
         glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
+        for (int x = 0; x < 32; x++) {
+            for (int y = 0; y < 32; y++) {
+                for (int z = 0; z < 32; z++) {
+                    pRenderer->TranslateWorldMatrix(x, y, z); // Render m_pBlocks[x][y][z]
+                }
+            }
+        }
         glDisableVertexAttribArray(0);
 
         // Swap buffers
