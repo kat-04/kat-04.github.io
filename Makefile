@@ -46,13 +46,13 @@
 # clean:
 # 	rm -rf ./gol-seq*
 
-# FILES = src/*.cpp \
+# FILES = src/*.cpp 
 # 		src/*.h
 
 EXECUTABLE := gol
-# LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -lcudart
-# CU_FILES   := gol.cu
-# CU_DEPS    :=
+LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -lcudart
+CU_FILES   := GolCuda.cu
+CU_DEPS    :=
 CC_FILES   := src/main.cpp src/gol-sequential.cpp
 LOGS	   := logs
 OUTPUT     := output-files
@@ -70,13 +70,13 @@ HOSTNAME=$(shell hostname)
 LIBS       :=
 FRAMEWORKS :=
 
-# NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/gcc
-# LIBS += GL glut cudart
+NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/gcc
+LIBS += GL glut cudart
 
-# LDLIBS  := $(addprefix -l, $(LIBS))
-# LDFRAMEWORKS := $(addprefix -framework , $(FRAMEWORKS))
+LDLIBS  := $(addprefix -l, $(LIBS))
+LDFRAMEWORKS := $(addprefix -framework , $(FRAMEWORKS))
 
-# NVCC=nvcc
+NVCC=nvcc
 
 $(OBJDIR)/%.o: src/%.cpp
 		$(CXX) $< $(CXXFLAGS) -c -o $@
@@ -103,5 +103,5 @@ $(EXECUTABLE): clean dirs $(OBJS)
 		# $(LDFLAGS) $(LDLIBS) $(LDFRAMEWORKS)
 
 
-# $(OBJDIR)/%.o: %.cu
-# 		$(NVCC) $< $(NVCCFLAGS) -c -o $@
+$(OBJDIR)/%.o: %.cu
+		$(NVCC) $< $(NVCCFLAGS) -c -o $@
