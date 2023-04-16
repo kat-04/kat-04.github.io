@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/katherinelu/Documents/15418/kat-04.github.io/render/src/main.cpp" "CMakeFiles/GOL3D.dir/src/main.cpp.o" "gcc" "CMakeFiles/GOL3D.dir/src/main.cpp.o.d"
+  "/Users/katherinelu/Documents/15418/kat-04.github.io/render/raylib-cpp-cmake-template/src/main.cpp" "CMakeFiles/raylib_template.dir/src/main.cpp.o" "gcc" "CMakeFiles/raylib_template.dir/src/main.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

@@ -1,25 +1,15 @@
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-set (CMAKE_CXX_STANDARD 17)
-project(GOL3D)
+cmake_minimum_required(VERSION 3.0)
+project(GOL3D C CXX)
 
-# Add source files
-# file (GLOB_RECURSE SOURCE_FILES
-#       ${CMAKE_SOURCE_DIR}/*.cpp)
+set(CMAKE_CXX_STANDARD 17)
 
-# Do the same for header files if used
+# Setting parameters for raylib
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
+set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # or games
 
-include_directories(/usr/local/include)
-link_directories(/usr/local/lib)
+add_subdirectory(libs/raylib)
 
-# add_executable(GOL3D render_cube.cpp)
-add_executable(GOL3D src/mesh.cpp)
-find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
-include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS} )
-
-add_compile_options("-g")
-
-target_link_libraries(GOL3D ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
-target_link_libraries(GOL3D glfw)
-target_link_libraries(GOL3D glew)
-
+add_executable(${PROJECT_NAME} src/main.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/") # Set the asset path macro to the absolute path on the dev machine
+#target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="relative-path-to-assets-in-the-game-package") # Set the asset path macro in release mode

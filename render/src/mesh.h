@@ -1,17 +1,20 @@
+#include <tuple>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-using namespace glm;
+#include "raylib.h"
+#include "raymath.h"
+/* #include <GL/glew.h> */
+/* #include <GLFW/glfw3.h> */
+/* #include <glm/glm.hpp> */
+/* using namespace glm; */
 
 // Vec3 = vector with (x, y, z)
 
-std::vector<vec3> parse_data() {
+std::tuple<int, std::vector<Matrix> > parse_data(std::string path_to_frame) {
 
     auto tokenize = [&](std::string &s, std::vector<std::string> &out) {
         const char *delim = " ";
@@ -24,14 +27,14 @@ std::vector<vec3> parse_data() {
 
     // open file
     // TODO: change to take in all frames
-    std::ifstream frame ("../output-files/frame0.txt");
+    std::ifstream frame (path_to_frame);
     int size = 0;
-    std::vector<vec3> vertices;
+    std::vector<Matrix> vertices;
     std::string line;
 
     if (!frame) {
         std::cout << "File does not exist" << std::endl;
-        return vertices;
+        return std::make_tuple(0, vertices);
     }
 
     std::getline(frame, line);
@@ -41,19 +44,21 @@ std::vector<vec3> parse_data() {
     std::vector<std::string> out;
     while (std::getline(frame, line, '\n')) {
         tokenize(line, out);
-        vec3 v = vec3(std::stoi(out[0]), std::stoi(out[1]), std::stoi(out[2]));
+        Matrix v = MatrixTranslate(std::stof(out[0]), std::stof(out[1]), std::stof(out[2]));
         vertices.push_back(v);
         out.clear();
     }
 
-    std::cout << "Side len: " << size << std::endl;
-    for (auto &v : vertices) {
-        std::cout << "Vertex: (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
-    }
-    return vertices;
+    /* std::cout << "Side len: " << size << std::endl; */
+    /* for (auto &v : vertices) { */
+    /*     std::cout << "Vertex: (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl; */
+    /* } */
+    return std::make_tuple(size, vertices);
 }
 
-int main() {
-    parse_data();
-    return 0;
-}
+
+
+/* int main() { */
+/*     parse_data("../output-files/frame0.txt"); */
+/*     return 0; */
+/* } */

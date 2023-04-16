@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/GOL3D.dir/src/mesh.cpp.o"
-  "CMakeFiles/GOL3D.dir/src/mesh.cpp.o.d"
+  "CMakeFiles/GOL3D.dir/src/main.cpp.o"
+  "CMakeFiles/GOL3D.dir/src/main.cpp.o.d"
   "GOL3D"
   "GOL3D.pdb"
 )
