@@ -8,5 +8,6 @@
         "map": "cpp",
         "iostream": "cpp",
         "__bit_reference": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": false
 }

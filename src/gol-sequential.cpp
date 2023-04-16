@@ -5,10 +5,12 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <cstring>
+#include <vector>
 #include <tuple>
 #include <fstream>
-#include <GL/glew.h> // include GLEW and new version of GL on Windows
-#include <GLFW/glfw3.h> // GLFW helper library for window management
+// #include <GL/glew.h> // include GLEW and new version of GL on Windows
+// #include <GLFW/glfw3.h> // GLFW helper library for window management
 #include <iostream> //for cout
 #include "timing.h"
 
@@ -24,7 +26,7 @@ void printVoxel(int x, int y, int z, bool alive) {
 
 vector<string> tokenizeLine(string &line, const char* delim) {
     vector<string> out;
-    char *token = strtok(const_cast<char*>(line.c_str()), delim); 
+    char *token = std::strtok(const_cast<char*>(line.c_str()), delim); 
     while (token != nullptr) 
     { 
         out.push_back(string(token)); 
@@ -53,7 +55,7 @@ tuple<map<int, bool>, bool, int> parseRules(string line) {
     //parse survival and birth rules
     vector<string> survivalSubsets = tokenizeLine(survival, commaDelim);
     vector<string> birthSubsets = tokenizeLine(birth, commaDelim);
-    for (int i = 0; i < birthSubsets.size(); i++) {
+    for (int i = 0; i < (int)birthSubsets.size(); i++) {
         if (birthSubsets[i].find('-') == string::npos) {    
             ruleMap[stoi(birthSubsets[i])] = true;
         } else {
@@ -64,7 +66,7 @@ tuple<map<int, bool>, bool, int> parseRules(string line) {
         }
     }
 
-    for (int i = 0; i < survivalSubsets.size(); i++) {
+    for (int i = 0; i < (int)survivalSubsets.size(); i++) {
         if (survivalSubsets[i].find('-') == string::npos) {    
             ruleMap[27 + stoi(survivalSubsets[i])] = true;
         } else {
@@ -125,7 +127,7 @@ int golSequential(int argc, char** argv)
     outputInit.open(frameOutputFile);
     map<int, bool> ruleMap;
     int numStates;
-    bool isMoore;
+    bool isMoore = false;
     while (getline(input, line)) {
         if (curLine == 0) {
             tie(ruleMap, isMoore, numStates) = parseRules(line);

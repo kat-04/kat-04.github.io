@@ -1,46 +1,47 @@
 //do stuff for global constants up top
 
 
-golCuda::golCuda() {
-    // image = NULL;
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <driver_functions.h>
 
-    // numberOfCircles = 0;
-    // position = NULL;
-    // velocity = NULL;
-    // color = NULL;
-    // radius = NULL;
+#include <string>
+#include <algorithm>
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <stdio.h>
+#include <vector>
 
-    // cudaDevicePosition = NULL;
-    // cudaDeviceVelocity = NULL;
-    // cudaDeviceColor = NULL;
-    // cudaDeviceRadius = NULL;
-    // cudaDeviceImageData = NULL;
+
+#include "golCuda.h"
+
+GolCuda::GolCuda() {
+    outputCube = NULL;
+    sideLength = 0;
+    ruleset = NULL;
+
+    cudaDeviceOutputData = NULL;
+    cudaDeviceSideLength = NULL;
+    cudaDeviceRuleset = NULL;
 }
 
-golCuda::~golCuda() {
+GolCuda::~GolCuda() {
 
-    // if (image) {
-    //     delete image;
-    // }
-
-    // if (position) {
-    //     delete [] position;
-    //     delete [] velocity;
-    //     delete [] color;
-    //     delete [] radius;
-    // }
-
-    // if (cudaDevicePosition) {
-    //     cudaFree(cudaDevicePosition);
-    //     cudaFree(cudaDeviceVelocity);
-    //     cudaFree(cudaDeviceColor);
-    //     cudaFree(cudaDeviceRadius);
-    //     cudaFree(cudaDeviceImageData);
-    // }
+    if (outputCube) {
+        delete outputCube;
+    }
+    if (ruleset) {
+        delete ruleset;
+    }
+    if (cudaDeviceOutputData) {
+        cudaFree(cudaDeviceOutputData);
+        cudaFree(cudaDeviceSideLength);
+        cudaFree(cudaDeviceRuleset);
+    }
 }
 
 void
-golCuda::clearResultCube() {
+GolCuda::clearResultCube() {
 
     // 256 threads per block is a healthy number
     // dim3 blockDim(16, 16, 1);
@@ -53,7 +54,7 @@ golCuda::clearResultCube() {
 }
 
 void
-golCuda::allocResultCube(int sideLength) {
+GolCuda::allocResultCube(int sideLength) {
 
     // if (image)
     //     delete image;
@@ -61,7 +62,7 @@ golCuda::allocResultCube(int sideLength) {
 }
 
 const Cube*
-golCuda::getResultCube() {
+GolCuda::getResultCube() {
 
     // Need to copy contents of the rendered image from device memory
     // before we expose the Image object to the caller
@@ -77,13 +78,13 @@ golCuda::getResultCube() {
 }
 
 void
-golCuda::loadInput(SceneName scene) {
+GolCuda::loadInput(char* file) {
     // sceneName = scene;
     // loadCircleScene(sceneName, numberOfCircles, position, velocity, color, radius);
 }
 
 void
-golCuda::setup() {
+GolCuda::setup() {
 
     int deviceCount = 0;
     bool isFastGPU = false;
@@ -158,6 +159,6 @@ golCuda::setup() {
 }
 
 void
-golCuda::doIteration() {
-
+GolCuda::doIteration() {
+    return;
 }

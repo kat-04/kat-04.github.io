@@ -1,7 +1,14 @@
 // TODO: write function to load data into cuda memory
+#include <stdlib.h>
+#include <stdio.h>
+#include <getopt.h>
+#include "golCuda.h"
 
-
-int golCuda(int argc, char** argv) {
+int gol_cuda(int argc, char** argv) {
+    GolCuda* golCuda;
+    golCuda = new GolCuda();
+    
+    golCuda->doIteration();
     // TODO: 
     // 1. init golCuda 
     // 2. allocResultCube
