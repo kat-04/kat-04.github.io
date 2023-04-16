@@ -1,6 +1,20 @@
 //do stuff for global constants up top
 
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <driver_functions.h>
+
+#include <string>
+#include <algorithm>
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <stdio.h>
+#include <vector>
+
+
+#include "golCuda.h"
+
 GolCuda::GolCuda() {
     outputCube = NULL;
     sideLength = 0;

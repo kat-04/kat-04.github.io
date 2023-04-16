@@ -1,4 +1,7 @@
 // TODO: write function to load data into cuda memory
+#include <stdlib.h>
+#include <stdio.h>
+#include <getopt.h>
 #include "golCuda.h"
 
 int gol_cuda(int argc, char** argv) {

@@ -51,9 +51,9 @@
 
 EXECUTABLE := gol
 LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -lcudart
-CU_FILES   := GolCuda.cu
+CU_FILES   := golCuda.cu
 CU_DEPS    :=
-CC_FILES   := src/main.cpp src/gol-sequential.cpp
+CC_FILES   := src/main.cpp 
 LOGS	   := logs
 OUTPUT     := output-files
 
@@ -64,7 +64,8 @@ all: $(EXECUTABLE)
 ARCH=$(shell uname | sed -e 's/-.*//g')
 OBJDIR=objs
 CXX=g++ -m64 -std=c++17
-CXXFLAGS=-O3 -Wall -g -lglfw -lGLEW -framework OpenGL
+# CXXFLAGS=-O3 -Wall -g -lglfw -lGLEW -framework OpenGL
+CXXFLAGS=-O3 -Wall -g
 HOSTNAME=$(shell hostname)
 
 LIBS       :=
@@ -81,7 +82,7 @@ NVCC=nvcc
 $(OBJDIR)/%.o: src/%.cpp
 		$(CXX) $< $(CXXFLAGS) -c -o $@
 
-OBJS=$(OBJDIR)/main.o
+OBJS=$(OBJDIR)/main.o 
 
 
 .PHONY: dirs clean
@@ -99,8 +100,7 @@ export: $(EXFILES)
 
 
 $(EXECUTABLE): clean dirs $(OBJS)
-		$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
-		# $(LDFLAGS) $(LDLIBS) $(LDFRAMEWORKS)
+		$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS) $(LDFRAMEWORKS)
 
 
 $(OBJDIR)/%.o: %.cu
