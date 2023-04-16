@@ -2,7 +2,9 @@
 
 ## Installation/Run Process
 
-You should be able to run `make` within the `render` folder then run the executable `./GOL3D` that is created after.
+In the `render` folder, first run the command `cmake .`. This should generate the `Makefile` for your computer.
+
+You should then be able to run `make` within the `render` folder then run the executable `./GOL3D` that is created after.
 
 If issues occur, then you may need to run one of the following commands:
 
