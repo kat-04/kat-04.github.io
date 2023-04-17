@@ -81,7 +81,7 @@ tuple<map<int, bool>, bool, int> parseRules(string line) {
 }
 
 
-int golSequential(int argc, char** argv)
+int golSequential(int argc, char** argv, string outputDir)
 {
     //TODO: timing code (output to log and/or print)
 
@@ -93,7 +93,7 @@ int golSequential(int argc, char** argv)
     string inputFile = argv[1];
     int numFrames = stoi(argv[2]);
     int sideLength = stoi(argv[3]);
-    string outputPath = "./output-files/frame";
+    string outputPath =  outputDir + "/frame";
     string frameOutputFile; 
     const char* spaceDelim = " ";
     
