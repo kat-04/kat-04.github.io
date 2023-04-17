@@ -16,7 +16,7 @@
     #define GLSL_VERSION            100
 #endif
 
-#define SECONDS_PER_FRAME 1
+#define SECONDS_PER_FRAME 0.1
 
 
 //------------------------------------------------------------------------------------
@@ -86,7 +86,8 @@ int main()
 
     // Set shader value: ambient light level
     int ambientLoc = GetShaderLocation(shader, "ambient");
-    SetShaderValue(shader, ambientLoc, (float[4]){ 0.2f, 0.2f, 0.2f, 1.0f }, SHADER_UNIFORM_VEC4);
+    float shader_attr[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    SetShaderValue(shader, ambientLoc, shader_attr, SHADER_UNIFORM_VEC4);
     //--------------------------------------------------------------------------------------
 
 
@@ -96,14 +97,15 @@ int main()
     // Color of the light: can either be preset or custom: (Color){ r, g, b, alpha }
     // Where 0 <= r, g, b, alpha <= 255 and alpha is opacity
     Color light_color = SKYBLUE;
-    Light light = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
+    Light light1 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
+    Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), RED, shader);
     //--------------------------------------------------------------------------------------
 
 
     //--------------------------------------------------------------------------------------
     // MATERIALS
 
-    Color mat_color = LIGHTGRAY;
+    Color mat_color = WHITE;
     Material matInstances = LoadMaterialDefault();
     matInstances.shader = shader;
     matInstances.maps[MATERIAL_MAP_DIFFUSE].color = mat_color;
@@ -151,6 +153,8 @@ int main()
     // If false, automatically default to orbit mode from current position
     // Press "C" to toggle camera into FREE/ORBITAL mode
     bool free = false;
+
+    bool updated = true;
     //--------------------------------------------------------------------------------------
 
 
@@ -179,8 +183,10 @@ int main()
         // Update shader and light accordingly to follow camera movement
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
-        light.position = camera.position;
-        UpdateLightValues(shader, light);
+        light1.position = (Vector3){camera.position.x, camera.position.y, -camera.position.z};
+        light2.position = (Vector3){-camera.position.x, camera.position.y, camera.position.z};
+        UpdateLightValues(shader, light1);
+        UpdateLightValues(shader, light2);
         //----------------------------------------------------------------------------------
 
 
@@ -200,12 +206,19 @@ int main()
                 // Increment frame every SECONDS_PER_FRAME seconds if not at last frame
                 if (GetTime() - lastFrameTime > SECONDS_PER_FRAME) {
                     frame++;
+                    updated = true;
                     lastFrameTime = GetTime();
                 }
             } else {
                 // Increment frame using WASD keys
-                if (IsKeyPressed(KEY_PERIOD)) frame++;
-                if (IsKeyPressed(KEY_COMMA)) frame--;
+                if (IsKeyPressed(KEY_PERIOD)) {
+                    frame++;
+                    updated = true;
+                }
+                if (IsKeyPressed(KEY_COMMA)) {
+                    frame--;
+                    updated = true;
+                }
             }
 
             // clear OS Stream
@@ -223,8 +236,10 @@ int main()
             if (!file.is_open()) {
                 if (frame < 0) {
                     frame++;
+                    updated = false;
                 } else {
                     frame--;
+                    updated = false;
                 }
                 oss.str("");
                 oss.clear();
@@ -232,15 +247,17 @@ int main()
                 filename = oss.str();
             }
 
-            // Get transforms and other data from the file
-            info = parse_data(filename);
-            transforms = &(std::get<1>(info))[0];
-            size = std::get<0>(info);
-            num_blocks = (std::get<1>(info)).size();
+            if (updated) {
+                // Get transforms and other data from the file
+                info = parse_data(filename);
+                transforms = &(std::get<1>(info))[0];
+                size = std::get<0>(info);
+                num_blocks = (std::get<1>(info)).size();
+            }
 
             // Draw outline (bounding box)
             if (!first) {
-                DrawCubeWires(origin, size, size, size, RED);
+                /* DrawCubeWires(origin, size, size, size, RED); */
                 // Draw mesh instances
                 DrawMeshInstanced(cube, matInstances, transforms, num_blocks);
             }

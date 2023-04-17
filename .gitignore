@@ -8,8 +8,12 @@ render/CPackSourceConfig.cmake
 render/cmake_install.cmake
 render/Makefile
 render/GOL3D
+render/libs/
 
-CMakeCache
+CMakeLists.txt
+Makefile
+CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
-execute
+GOL3D
+output-files/*.txt

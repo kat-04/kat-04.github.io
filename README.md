@@ -43,4 +43,5 @@ You can find the GitHub for raylib [here](https://github.com/raysan5/raylib) but
 
 ## Later Additions
 
+- Speed up rendering time by culling voxels not visible
 - Add ambient occlusion to easily distinguish depth of voxels
