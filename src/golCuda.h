@@ -9,14 +9,14 @@ struct Cube;
 class GolCuda {
 
 private:
-    Cube* outputCube;
+    Cube* cubeData;
 
-    int sideLength;
+    int* sideLength;
     int* ruleset;
 
-    int* cudaDeviceResultData;
-    float* cudaDeviceRuleset;
-    float* cudaDeviceSideLength;
+    Cube* cudaDeviceData;
+    int* cudaDeviceRuleset;
+    int* cudaDeviceSideLength;
 public:
 
     GolCuda();

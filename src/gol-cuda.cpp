@@ -1,14 +1,20 @@
 // TODO: write function to load data into cuda memory
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 #include <getopt.h>
 #include "golCuda.h"
 
-int gol_cuda(int argc, char** argv) {
-    GolCuda* golCuda;
-    golCuda = new GolCuda();
+int gol_cuda(int argc, char** argv, std::string fileDir) {
     
-    golCuda->doIteration();
+    GolCuda* golCuda;
+    
+    golCuda = new GolCuda();
+    std::cout << "TESTING :)" << std::endl;
+    //golCuda->allocResultCube(3);
+    
+    golCuda->setup();
+    //golCuda->doIteration();
     // TODO: 
     // 1. init golCuda 
     // 2. allocResultCube
@@ -22,3 +28,16 @@ int gol_cuda(int argc, char** argv) {
     // 10. profit
     return 0;
 }
+
+// int main(int argc, char** argv)
+// {
+    
+
+//     // clean output files
+//     system("rm -rf /tmp/output-files/");
+//     system("mkdir /tmp/output-files/");
+
+//     // TODO: call golCuda with args (maybe add option flag to input to decide which version to call)
+//     return gol_cuda(argc, argv, "/tmp/output-files"); 
+//     //return golSequential(argc, argv, "/tmp/output-files");
+// }
