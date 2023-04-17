@@ -9,5 +9,5 @@ int main(int argc, char** argv)
     // clean output files
     system("rm -rf output-files/*");
 
-    return golSequential(argc, argv);
+    return golSequential(argc, argv, "output-files");
 }

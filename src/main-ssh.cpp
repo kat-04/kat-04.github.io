@@ -10,5 +10,5 @@ int main(int argc, char** argv)
     system("rm -rf /tmp/output-files/");
     system("mkdir /tmp/output-files/");
 
-    return golSequential(argc, argv);
+    return golSequential(argc, argv, "/tmp/output-files");
 }
