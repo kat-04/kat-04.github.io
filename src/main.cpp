@@ -7,7 +7,8 @@ int main(int argc, char** argv)
     /* return gol_cuda(argc, argv); */
 
     // clean output files
-    system("rm output-files/*.txt");
+    system("rm -rf /tmp/output-files/");
+    system("mkdir /tmp/output-files/");
 
     return golSequential(argc, argv);
 }

@@ -86,7 +86,8 @@ int main()
 
     // Set shader value: ambient light level
     int ambientLoc = GetShaderLocation(shader, "ambient");
-    SetShaderValue(shader, ambientLoc, (float[4]){ 0.2f, 0.2f, 0.2f, 1.0f }, SHADER_UNIFORM_VEC4);
+    float shader_attr[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    SetShaderValue(shader, ambientLoc, shader_attr, SHADER_UNIFORM_VEC4);
     //--------------------------------------------------------------------------------------
 
 

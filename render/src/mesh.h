@@ -4,9 +4,12 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include "raylib.h"
 #include "raymath.h"
+
+using namespace std;
 
 std::tuple<int, std::vector<Matrix> > parse_data(std::string path_to_frame) {
 
@@ -16,7 +19,7 @@ std::tuple<int, std::vector<Matrix> > parse_data(std::string path_to_frame) {
         char *token = std::strtok(const_cast<char*>(s.c_str()), delim); 
         while (token != nullptr) { 
             out.push_back(std::string(token)); 
-            token = strtok(nullptr, delim); 
+            token = std::strtok(nullptr, delim); 
         }
     };
 
