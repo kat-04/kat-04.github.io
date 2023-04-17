@@ -16,4 +16,5 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 execute
+GOL3D
 output-files/*.txt
