@@ -9,7 +9,7 @@ render/cmake_install.cmake
 render/Makefile
 render/GOL3D
 
-CMakeCache
+CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 execute
