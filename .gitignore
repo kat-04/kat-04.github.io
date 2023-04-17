@@ -1,0 +1,10 @@
+render/libs/
+render/cmake/
+render/CMakeFiles/
+render/CMakeCache.txt
+render/CMakeLists.txt
+render/CPackConfig.cmake
+render/CPackSourceConfig.cmake
+render/cmake_install.cmake
+render/Makefile
+render/GOL3D
