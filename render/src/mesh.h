@@ -7,15 +7,10 @@
 #include <vector>
 #include "raylib.h"
 #include "raymath.h"
-/* #include <GL/glew.h> */
-/* #include <GLFW/glfw3.h> */
-/* #include <glm/glm.hpp> */
-/* using namespace glm; */
-
-// Vec3 = vector with (x, y, z)
 
 std::tuple<int, std::vector<Matrix> > parse_data(std::string path_to_frame) {
 
+    // tokensizes the string to parse integers
     auto tokenize = [&](std::string &s, std::vector<std::string> &out) {
         const char *delim = " ";
         char *token = std::strtok(const_cast<char*>(s.c_str()), delim); 
@@ -26,39 +21,39 @@ std::tuple<int, std::vector<Matrix> > parse_data(std::string path_to_frame) {
     };
 
     // open file
-    // TODO: change to take in all frames
     std::ifstream frame (path_to_frame);
     int size = 0;
     std::vector<Matrix> vertices;
     std::string line;
 
+    // should be caught by call, but just in case
     if (!frame) {
         std::cout << "File does not exist" << std::endl;
         return std::make_tuple(0, vertices);
     }
 
+    // get size separately (always first line of file)
     std::getline(frame, line);
     size = std::stoi(line);
+
+    // How much to translate each vertex by
+    // Centers entire structure at (0, 0, 0)
+    Matrix shift = MatrixTranslate(-size / 2.f + 0.5f, -size / 2.f + 0.5f, -size / 2.f + 0.5f);
 
     char delim = ' ';
     std::vector<std::string> out;
     while (std::getline(frame, line, '\n')) {
+        // tokenizes line and places values in out
         tokenize(line, out);
-        Matrix v = MatrixTranslate(std::stof(out[0]), std::stof(out[1]), std::stof(out[2]));
+
+        // Translates each pixel by its coordinates
+        // Then translates it down to adjust for origin
+        Matrix v = MatrixMultiply(MatrixTranslate(std::stof(out[0]), std::stof(out[1]), std::stof(out[2])), shift);
+
+        // add to vector
         vertices.push_back(v);
         out.clear();
     }
 
-    /* std::cout << "Side len: " << size << std::endl; */
-    /* for (auto &v : vertices) { */
-    /*     std::cout << "Vertex: (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl; */
-    /* } */
     return std::make_tuple(size, vertices);
 }
-
-
-
-/* int main() { */
-/*     parse_data("../output-files/frame0.txt"); */
-/*     return 0; */
-/* } */

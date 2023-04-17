@@ -49,7 +49,7 @@ os.system('mkdir -p output')
 os.system('rm -rf output/*')
 
 
-init_file = f'src/init-files/basic-cube-init.txt'
+init_file = f'src/input-files/basic-cube-init.txt'
 log_file = f'logs/basic_cube.txt'
 cmd = f'./gol-seq -f {init_file} -n {num_frames} -s {side_len} > {log_file}'
 ret = os.system(cmd)

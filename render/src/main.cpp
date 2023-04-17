@@ -16,8 +16,12 @@
     #define GLSL_VERSION            100
 #endif
 
+#define SECONDS_PER_FRAME 1
 
+
+//------------------------------------------------------------------------------------
 // Logging
+//------------------------------------------------------------------------------------
 void log(int msgType, const char *text, va_list args)
 {
     char timeStr[64] = { 0 };
@@ -42,7 +46,7 @@ void log(int msgType, const char *text, va_list args)
 
 
 //------------------------------------------------------------------------------------
-// Program main entry point
+// Main
 //------------------------------------------------------------------------------------
 int main()
 {
@@ -53,11 +57,12 @@ int main()
 
     // Set logging method and configuration
     SetTraceLogCallback(log);
-    SetConfigFlags(FLAG_MSAA_4X_HINT); // if available
+    /* SetConfigFlags(FLAG_MSAA_4X_HINT); // if available */
     InitWindow(screenWidth, screenHeight, "3D Conway's Game of Life");
 
     // Initialize the camera
-    Vector3 starting_pos = (Vector3){ 30.0f, 10.0f, 10.0f };
+    /* Vector3 starting_pos = (Vector3){ 30.0f, 10.0f, 10.0f }; */
+    Vector3 starting_pos = (Vector3){ 0.0f, 0.0f, 0.0f };
     Camera3D camera = { 0 };
     camera.position = starting_pos; // Camera position
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
@@ -85,8 +90,9 @@ int main()
     //--------------------------------------------------------------------------------------
 
 
-    // LIGHT(S)
     //--------------------------------------------------------------------------------------
+    // LIGHT(S)
+
     // Color of the light: can either be preset or custom: (Color){ r, g, b, alpha }
     // Where 0 <= r, g, b, alpha <= 255 and alpha is opacity
     Color light_color = SKYBLUE;
@@ -96,7 +102,8 @@ int main()
 
     //--------------------------------------------------------------------------------------
     // MATERIALS
-    Color mat_color = (Color){ 135, 60, 190, 150 };
+
+    Color mat_color = LIGHTGRAY;
     Material matInstances = LoadMaterialDefault();
     matInstances.shader = shader;
     matInstances.maps[MATERIAL_MAP_DIFFUSE].color = mat_color;
@@ -115,6 +122,9 @@ int main()
     // Frame number -- used to get vertices of a certain frame
     int frame = 0;
 
+    // Check if first frame
+    bool first = true;
+
     // Time of previous frame (used when letting frames run)
     double lastFrameTime = 0;
 
@@ -129,7 +139,7 @@ int main()
     Matrix *transforms;
     int size;
     int num_blocks;
-    Vector3 origin;
+    Vector3 origin = Vector3Zero();
 
     // Toggles for different modes
     // Manual mode: use arrow keys to move frame by frame
@@ -142,6 +152,7 @@ int main()
     // Press "C" to toggle camera into FREE/ORBITAL mode
     bool free = false;
     //--------------------------------------------------------------------------------------
+
 
 
 
@@ -172,8 +183,10 @@ int main()
         UpdateLightValues(shader, light);
         //----------------------------------------------------------------------------------
 
-        // Draw
+
         //----------------------------------------------------------------------------------
+        // DRAW
+
         BeginDrawing();
 
             ClearBackground(BLACK);
@@ -184,8 +197,8 @@ int main()
             if (IsKeyPressed(KEY_F)) manual = !manual;
 
             if (!manual) {
-                // Increment frame every 5 seconds if not at last frame
-                if (GetTime() - lastFrameTime > 5) {
+                // Increment frame every SECONDS_PER_FRAME seconds if not at last frame
+                if (GetTime() - lastFrameTime > SECONDS_PER_FRAME) {
                     frame++;
                     lastFrameTime = GetTime();
                 }
@@ -224,26 +237,32 @@ int main()
             transforms = &(std::get<1>(info))[0];
             size = std::get<0>(info);
             num_blocks = (std::get<1>(info)).size();
-            origin = { (float)(size / 2), (float)(size / 2), (float)(size / 2) };
 
             // Draw outline (bounding box)
-            DrawCubeWires(origin, size, size, size, RED);
-            // Draw mesh instances
-            DrawMeshInstanced(cube, matInstances, transforms, num_blocks);
+            if (!first) {
+                DrawCubeWires(origin, size, size, size, RED);
+                // Draw mesh instances
+                DrawMeshInstanced(cube, matInstances, transforms, num_blocks);
+            }
+
+            if (first) {
+                // sets camera position in accordance to the size of the cube during first frame
+                camera.position = (Vector3) { (float)size, size / 4.f, 2.f * size };
+                starting_pos = camera.position;
+            }
+
+            first = false;
 
             EndMode3D();
 
             // Uncomment if you want to see FPS
-            // DrawFPS(10, 10);
+            DrawFPS(10, 10);
 
         EndDrawing();
         //----------------------------------------------------------------------------------
     }
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
     CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
 
     return 0;
 }
