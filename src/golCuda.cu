@@ -11,30 +11,39 @@
 #include <math.h>
 #include <stdio.h>
 #include <vector>
-
-
+#include "cube.h"
 #include "golCuda.h"
 
+struct GlobalConstants {
+
+    Cube* cubeData;
+
+    int* sideLength;
+    int* ruleset;
+};
+
+__constant__ GlobalConstants cuConstIterationParams;
+
 GolCuda::GolCuda() {
-    outputCube = NULL;
-    sideLength = 0;
+    cubeData = NULL;
+    sideLength = NULL;
     ruleset = NULL;
 
-    cudaDeviceOutputData = NULL;
+    cudaDeviceData = NULL;
     cudaDeviceSideLength = NULL;
     cudaDeviceRuleset = NULL;
 }
 
 GolCuda::~GolCuda() {
 
-    if (outputCube) {
-        delete outputCube;
+    if (cubeData) {
+        delete cubeData;
     }
     if (ruleset) {
-        delete ruleset;
+        delete [] ruleset;
     }
-    if (cudaDeviceOutputData) {
-        cudaFree(cudaDeviceOutputData);
+    if (cudaDeviceData) {
+        cudaFree(cudaDeviceData);
         cudaFree(cudaDeviceSideLength);
         cudaFree(cudaDeviceRuleset);
     }
@@ -56,9 +65,9 @@ GolCuda::clearResultCube() {
 void
 GolCuda::allocResultCube(int sideLength) {
 
-    // if (image)
-    //     delete image;
-    // image = new Image(width, height);
+    if (cubeData)
+        delete cubeData;
+    cubeData = new Cube(sideLength);
 }
 
 const Cube*
@@ -69,18 +78,17 @@ GolCuda::getResultCube() {
 
     // printf("Copying image data from device\n");
 
-    // cudaMemcpy(image->data,
-    //            cudaDeviceImageData,
-    //            sizeof(float) * 4 * image->width * image->height,
+    // cudaMemcpy(cubeData,
+    //            cudaDeviceData,
+    //            size of data :),
     //            cudaMemcpyDeviceToHost);
 
-    // return image;
+    // return cubeData;
 }
 
 void
 GolCuda::loadInput(char* file) {
-    // sceneName = scene;
-    // loadCircleScene(sceneName, numberOfCircles, position, velocity, color, radius);
+    // loadInput(file, sideLength, ruleset);
 }
 
 void
@@ -125,16 +133,16 @@ GolCuda::setup() {
     // See the CUDA Programmer's Guide for descriptions of
     // cudaMalloc and cudaMemcpy
 
-    cudaMalloc(&cudaDevicePosition, sizeof(float) * 3 * numberOfCircles);
-    cudaMalloc(&cudaDeviceVelocity, sizeof(float) * 3 * numberOfCircles);
-    cudaMalloc(&cudaDeviceColor, sizeof(float) * 3 * numberOfCircles);
-    cudaMalloc(&cudaDeviceRadius, sizeof(float) * numberOfCircles);
-    cudaMalloc(&cudaDeviceImageData, sizeof(float) * 4 * image->width * image->height);
+    cudaMalloc(&sideLength, sizeof(int));
+    cudaMalloc(&ruleset, sizeof(int) * 56);
+    cudaMalloc(&cudaDeviceSideLength, sizeof(int));
+    cudaMalloc(&cudaDeviceRuleset, sizeof(int) * 56);
+    cudaMalloc(&cudaDeviceData, sizeof(int) * (*sideLength) * (*sideLength) * (*sideLength));
 
-    cudaMemcpy(cudaDevicePosition, position, sizeof(float) * 3 * numberOfCircles, cudaMemcpyHostToDevice);
-    cudaMemcpy(cudaDeviceVelocity, velocity, sizeof(float) * 3 * numberOfCircles, cudaMemcpyHostToDevice);
-    cudaMemcpy(cudaDeviceColor, color, sizeof(float) * 3 * numberOfCircles, cudaMemcpyHostToDevice);
-    cudaMemcpy(cudaDeviceRadius, radius, sizeof(float) * numberOfCircles, cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaDeviceSideLength, sideLength, sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(int) * 56, cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaDeviceData, cubeData, sizeof(int) * (*sideLength) * (*sideLength) * (*sideLength), cudaMemcpyHostToDevice);
+    
 
     // Initialize parameters in constant memory.  We didn't talk about
     // constant memory in class, but the use of read-only constant
@@ -145,17 +153,11 @@ GolCuda::setup() {
     // Guide for more information about constant memory.
 
     GlobalConstants params;
-    params.sceneName = sceneName;
-    params.numberOfCircles = numberOfCircles;
-    params.imageWidth = image->width;
-    params.imageHeight = image->height;
-    params.position = cudaDevicePosition;
-    params.velocity = cudaDeviceVelocity;
-    params.color = cudaDeviceColor;
-    params.radius = cudaDeviceRadius;
-    params.imageData = cudaDeviceImageData;
+    params.cubeData = cudaDeviceData;
+    params.sideLength = cudaDeviceSideLength;
+    params.ruleset = cudaDeviceRuleset;
 
-    cudaMemcpyToSymbol(cuConstRendererParams, &params, sizeof(GlobalConstants));
+    cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
 }
 
 void
