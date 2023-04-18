@@ -55,9 +55,13 @@ tuple<map<int, bool>, bool, int> parseRules(string line) {
     //parse survival and birth rules
     vector<string> survivalSubsets = tokenizeLine(survival, commaDelim);
     vector<string> birthSubsets = tokenizeLine(birth, commaDelim);
+    
     for (int i = 0; i < (int)birthSubsets.size(); i++) {
         if (birthSubsets[i].find('-') == string::npos) {    
-            ruleMap[stoi(birthSubsets[i])] = true;
+            if (birthSubsets[i] != "x") {
+                ruleMap[stoi(birthSubsets[i])] = true;
+            }
+            
         } else {
             vector<string> range = tokenizeLine(birthSubsets[i], dashDelim);
             for (int j = stoi(range[0]); j <= stoi(range[1]); j++) {
@@ -67,8 +71,10 @@ tuple<map<int, bool>, bool, int> parseRules(string line) {
     }
 
     for (int i = 0; i < (int)survivalSubsets.size(); i++) {
-        if (survivalSubsets[i].find('-') == string::npos) {    
-            ruleMap[27 + stoi(survivalSubsets[i])] = true;
+        if (survivalSubsets[i].find('-') == string::npos) {  
+            if (survivalSubsets[i] != "x") {
+                ruleMap[27 + stoi(survivalSubsets[i])] = true;
+            }  
         } else {
             vector<string> range = tokenizeLine(survivalSubsets[i], dashDelim);
             for (int j = 27 + stoi(range[0]); j <= 27 + stoi(range[1]); j++) {

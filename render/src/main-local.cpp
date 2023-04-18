@@ -16,7 +16,7 @@
     #define GLSL_VERSION            100
 #endif
 
-#define SECONDS_PER_FRAME 0.1
+#define SECONDS_PER_FRAME 0.5
 
 
 //------------------------------------------------------------------------------------
