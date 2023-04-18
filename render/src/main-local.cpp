@@ -254,6 +254,7 @@ int main()
                 transforms = &(std::get<1>(info))[0];
                 size = std::get<0>(info);
                 num_blocks = (std::get<1>(info)).size();
+                updated = false;
             }
 
             // Draw outline (bounding box)
