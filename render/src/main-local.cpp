@@ -3,6 +3,7 @@
 #include "raymath.h"
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <stdio.h>
 #include <time.h>
@@ -16,7 +17,7 @@
     #define GLSL_VERSION            100
 #endif
 
-#define SECONDS_PER_FRAME 0.5
+#define SECONDS_PER_FRAME 0.1
 
 
 //------------------------------------------------------------------------------------
