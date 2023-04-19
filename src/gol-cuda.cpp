@@ -142,13 +142,13 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
     golCuda = new GolCuda();
 
     golCuda->allocOutputCube(sideLength);
-    golCuda->loadInput(const_cast<char*>(fileDir.c_str()), sideLength);
+    golCuda->loadInput(const_cast<char*>(inputFile.c_str()), sideLength);
     golCuda->setup();
-    //golCuda->clearResultCube();
+    //golCuda->clearOutputCube();
     //time start
-    //gol->Cuda->doIteration();
+    golCuda->doIteration();
     //time end
-    //golCuda->getResultCube();
+    //golCuda->getCube();
     //write to output file
 
     return 0;

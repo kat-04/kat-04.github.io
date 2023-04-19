@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <vector>
 #include "cube.h"
+#include "fileLoader.h"
 #include "golCuda.h"
 
 struct GlobalConstants {
@@ -54,7 +55,7 @@ GolCuda::~GolCuda() {
 
 void
 GolCuda::clearOutputCube() {
-
+    cube->clear();
     // 256 threads per block is a healthy number
     // dim3 blockDim(16, 16, 1);
     // dim3 gridDim(
@@ -91,8 +92,7 @@ GolCuda::getCube() {
 
 void
 GolCuda::loadInput(char* file, int n) {
-    // loadIterationInput(file, sideLength, ruleset, inputData);
-    return;
+    loadCubeInput(file, sideLength, ruleset, inputData, n);
 }
 
 void
@@ -164,5 +164,6 @@ GolCuda::setup() {
 
 void
 GolCuda::doIteration() {
+    // printf("HEY im in cuda and i also loaded the sideLength of: %d!\n", sideLength);
     return;
 }
