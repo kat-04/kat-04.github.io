@@ -10,6 +10,6 @@
 
 using namespace std; 
 
-int golSequential(int argc, char** argv, string outputDir);
+int golSequential(int argc, char** argv, std::string outputDir);
 
 #endif

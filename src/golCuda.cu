@@ -80,10 +80,12 @@ GolCuda::getResultCube() {
 
     // cudaMemcpy(cubeData,
     //            cudaDeviceData,
-    //            size of data :),
+    //            //TODO,
     //            cudaMemcpyDeviceToHost);
 
     // return cubeData;
+    Cube* cube = new Cube(1);
+    return cube;
 }
 
 void
