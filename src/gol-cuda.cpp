@@ -39,27 +39,34 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
     }
     golCuda->setup();
     golCuda->clearOutputCube();
+
+    Cube* resultCube;
+
     //time start
-    golCuda->doIteration();
-    //time end
-    const Cube* resultCube = golCuda->getCube();
-    //write to output file
-    std::cout << "outputtin'" << std::endl;
-    std::string frameOutputFile = outputPath + to_string(1) + ".txt";
-    ofstream output; 
-
-    output.open(frameOutputFile);
-    output << sideLength << std::endl;
-    for (int i = 0; i < sideLength * sideLength * sideLength; i++) {
-        int z = (i / (sideLength * sideLength)) % sideLength;
-        int y = (i / sideLength) % sideLength;
-        int x = i % sideLength;
-        if (resultCube->data[i]) {
-            output << x << " " << y << " " << z << endl;
+    for (int f = 0; f < numFrames; f++) {
+        golCuda->doIteration();
+        //time end
+        resultCube = golCuda->getCube();
+        golCuda->advanceFrame();
+        //write to output file
+        ofstream output; 
+        std::string frameOutputFile = outputPath + to_string(f+1) + ".txt";
+        output.open(frameOutputFile);
+       
+        
+        output << sideLength << std::endl;
+        for (int i = 0; i < sideLength * sideLength * sideLength; i++) {
+            int z = (i / (sideLength * sideLength)) % sideLength;
+            int y = (i / sideLength) % sideLength;
+            int x = i % sideLength;
+            if (resultCube->data[i]) {
+                output << x << " " << y << " " << z << endl;
+            }
         }
+        output.close();
     }
-
-    output.close();
+    
+    
 
     return 0;
 }

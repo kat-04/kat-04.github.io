@@ -55,7 +55,7 @@ __global__ void kernelDoIterationMoore() {
     }
     // printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, *(int*)&cuConstIterationParams.inputData[index]);
     if (*(int*)&cuConstIterationParams.inputData[index]) {
-        printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
+        // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
         *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[27 + numAlive])) ? 1 : 0;
     } else {
         // printf("x: %d, y: %d, z: %d is dead rn \n");
@@ -116,19 +116,19 @@ GolCuda::allocOutputCube(int sideLength) {
         cube = new Cube(sideLength);
 }
  
-const Cube*
+Cube*
 GolCuda::getCube() {
 
     // Need to copy contents of the rendered image from device memory
     // before we expose the Image object to the caller
 
-    printf("Copying image data from device\n");
+    //printf("Copying image data from device\n");
 
     cudaMemcpy(cube->data,
                cudaDeviceOutputData,
                sizeof(int) * sideLength * sideLength * sideLength,
                cudaMemcpyDeviceToHost);
-
+    
     return cube;
 }
 
@@ -206,9 +206,20 @@ GolCuda::setup() {
     cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
 }
 
+
+void 
+GolCuda::advanceFrame() {
+    cudaMemcpy(inputData,
+        cudaDeviceOutputData,
+        sizeof(int) * sideLength * sideLength * sideLength,
+        cudaMemcpyDeviceToHost);
+
+    cudaMemcpy(cudaDeviceInputData, inputData, sizeof(int) * sideLength * sideLength * sideLength, cudaMemcpyHostToDevice);
+    //cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
+}
+
 void
-GolCuda::doIteration() {
-    
+GolCuda::doIteration() {    
     dim3 blockDim(BLOCK_SIZE);
     dim3 gridDim(((sideLength * sideLength * sideLength) + blockDim.x - 1) / blockDim.x);
 
@@ -217,10 +228,5 @@ GolCuda::doIteration() {
     } else {
         kernelDoIterationVonNeumann<<<gridDim, blockDim>>>(); 
     }
-    
-    // cudaMemcpy(cube->data,
-    //     cudaDeviceOutputData,
-    //     sizeof(int) * sideLength * sideLength * sideLength,
-    //     cudaMemcpyDeviceToHost);
-    
-}
+      
+}  
