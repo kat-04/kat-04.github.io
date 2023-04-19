@@ -15,16 +15,61 @@
 #include "fileLoader.h"
 #include "golCuda.h"
 
+#define BLOCK_SIZE 256
+
 struct GlobalConstants {
     int sideLength;
     bool isMoore;
     int numStates;
-    int* outputData;
     bool* ruleset;
     int* inputData;
+    int* outputData;
 };
 
 __constant__ GlobalConstants cuConstIterationParams;
+
+__global__ void kernelDoIterationMoore() {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int n = *(int*)&cuConstIterationParams.sideLength;
+    if (index < 0 || index >= n * n * n) {
+        return;
+    }
+    
+    int z = (index / (n * n)) % n;
+    int y = (index / n) % n;
+    int x = index % n;
+    int linIndex;
+    int numAlive = 0;
+    // printf("doin index %d, x: %d, y: %d, z: %d\n", index, x, y, z);
+    for (int i = x - 1; i <= x + 1; i++) {
+        for (int j = y - 1; j <= y + 1; j++) {
+            for (int k = z - 1; k <= z + 1; k++) {
+                if (i >= 0 && j >= 0 && k >= 0 && i < n && j < n && k < n) {
+                    if (!(x == i && y == j && z == k)) { //don't include self
+                        linIndex = (k * n * n) + (j * n) + i;
+                        numAlive += *(int*)&cuConstIterationParams.inputData[linIndex] ? 1 : 0;
+                    }
+                }
+            }
+        }
+    }
+    // printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, *(int*)&cuConstIterationParams.inputData[index]);
+    if (*(int*)&cuConstIterationParams.inputData[index]) {
+        printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
+        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[27 + numAlive])) ? 1 : 0;
+    } else {
+        // printf("x: %d, y: %d, z: %d is dead rn \n");
+        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[numAlive])) ? 1 : 0;
+    }
+}
+
+__global__ void kernelDoIterationVonNeumann() {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    *(int*)(&cuConstIterationParams.outputData[index]) = 5;
+}
+
+
 
 GolCuda::GolCuda() {
     sideLength = 0;
@@ -61,14 +106,6 @@ GolCuda::~GolCuda() {
 void
 GolCuda::clearOutputCube() {
     cube->clear();
-    // 256 threads per block is a healthy number
-    // dim3 blockDim(16, 16, 1);
-    // dim3 gridDim(
-    //     (image->width + blockDim.x - 1) / blockDim.x,
-    //     (image->height + blockDim.y - 1) / blockDim.y);
-
-    // kernelClearImage<<<gridDim, blockDim>>>(1.f, 1.f, 1.f, 1.f);
-
 }
 
 void
@@ -171,14 +208,19 @@ GolCuda::setup() {
 
 void
 GolCuda::doIteration() {
-    // printf("sideLength: %d, numStates: %d, isMoore %d\n", sideLength, numStates, isMoore);
-    // printf("ruleset: ");
-    // for (int i = 0; i < 54; i++) {
-    //     printf("%d, ", ruleset[i]);
-    // }
-    // printf("\n, inputData: ");
-    // for (int i = 0; i < sideLength * sideLength * sideLength; i++) {
-    //     printf("%d: %d, ", i, inputData[i]);
-    // }
-    return;
+    
+    dim3 blockDim(BLOCK_SIZE);
+    dim3 gridDim(((sideLength * sideLength * sideLength) + blockDim.x - 1) / blockDim.x);
+
+    if (isMoore) {
+        kernelDoIterationMoore<<<gridDim, blockDim>>>(); 
+    } else {
+        kernelDoIterationVonNeumann<<<gridDim, blockDim>>>(); 
+    }
+    
+    // cudaMemcpy(cube->data,
+    //     cudaDeviceOutputData,
+    //     sizeof(int) * sideLength * sideLength * sideLength,
+    //     cudaMemcpyDeviceToHost);
+    
 }

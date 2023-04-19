@@ -38,12 +38,28 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
         return 1;
     }
     golCuda->setup();
-    //golCuda->clearOutputCube();
+    golCuda->clearOutputCube();
     //time start
     golCuda->doIteration();
     //time end
-    //golCuda->getCube();
+    const Cube* resultCube = golCuda->getCube();
     //write to output file
+    std::cout << "outputtin'" << std::endl;
+    std::string frameOutputFile = outputPath + to_string(1) + ".txt";
+    ofstream output; 
+
+    output.open(frameOutputFile);
+    output << sideLength << std::endl;
+    for (int i = 0; i < sideLength * sideLength * sideLength; i++) {
+        int z = (i / (sideLength * sideLength)) % sideLength;
+        int y = (i / sideLength) % sideLength;
+        int x = i % sideLength;
+        if (resultCube->data[i]) {
+            output << x << " " << y << " " << z << endl;
+        }
+    }
+
+    output.close();
 
     return 0;
 }
