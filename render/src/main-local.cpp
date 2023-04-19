@@ -97,9 +97,10 @@ int main()
 
     // Color of the light: can either be preset or custom: (Color){ r, g, b, alpha }
     // Where 0 <= r, g, b, alpha <= 255 and alpha is opacity
-    Color light_color = SKYBLUE;
-    Light light1 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
-    Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), RED, shader);
+    Color light_color1 = (Color) { 255, 87, 115, 255 };
+    Light light1 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color1, shader);
+    Color light_color2 = (Color) { 208, 106, 252, 255 };
+    Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color2, shader);
     //--------------------------------------------------------------------------------------
 
 
