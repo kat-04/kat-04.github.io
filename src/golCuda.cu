@@ -65,8 +65,30 @@ __global__ void kernelDoIterationMoore() {
 
 __global__ void kernelDoIterationVonNeumann() {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int n = *(int*)&cuConstIterationParams.sideLength;
+    if (index < 0 || index >= n * n * n) {
+        return;
+    }
     
-    *(int*)(&cuConstIterationParams.outputData[index]) = 5;
+    int z = (index / (n * n)) % n;
+    int y = (index / n) % n;
+    int x = index % n;
+    int numAlive = 0;
+
+    numAlive += ((x - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + (y * n) + x - 1]) ? 1 : 0;
+    numAlive += ((x + 1 < n) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + (y * n) + x + 1]) ? 1 : 0;
+    numAlive += ((y - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + ((y-1) * n) + x]) ? 1 : 0;
+    numAlive += ((y + 1 < n) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + ((y+1) * n) + x]) ? 1 : 0;
+    numAlive += ((z - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[((z-1) * n * n) + (y * n) + x]) ? 1 : 0;
+    numAlive += ((z + 1 < n) && *(int*)&cuConstIterationParams.inputData[((z+1) * n * n) + (y * n) + x]) ? 1 : 0;
+
+    if (*(int*)&cuConstIterationParams.inputData[index]) {
+        // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
+        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[27 + numAlive])) ? 1 : 0;
+    } else {
+        // printf("x: %d, y: %d, z: %d is dead rn \n");
+        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[numAlive])) ? 1 : 0;
+    }
 }
 
 
