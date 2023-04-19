@@ -12,46 +12,50 @@
 #include <stdio.h>
 #include <vector>
 #include "cube.h"
+#include "fileLoader.h"
 #include "golCuda.h"
 
 struct GlobalConstants {
-
-    Cube* cubeData;
-
-    int* sideLength;
+    int sideLength;
+    int* outputData;
     int* ruleset;
+    int* inputData;
 };
 
 __constant__ GlobalConstants cuConstIterationParams;
 
 GolCuda::GolCuda() {
-    cubeData = NULL;
-    sideLength = NULL;
+    sideLength = 0;
+    cube = NULL;
     ruleset = NULL;
+    inputData = NULL;
 
-    cudaDeviceData = NULL;
-    cudaDeviceSideLength = NULL;
+    cudaDeviceInputData = NULL;
+    cudaDeviceOutputData = NULL;
     cudaDeviceRuleset = NULL;
 }
 
 GolCuda::~GolCuda() {
 
-    if (cubeData) {
-        delete cubeData;
+    if (cube) {
+        delete [] cube;
     }
     if (ruleset) {
         delete [] ruleset;
+    } 
+    if (inputData) {
+        delete [] inputData;
     }
-    if (cudaDeviceData) {
-        cudaFree(cudaDeviceData);
-        cudaFree(cudaDeviceSideLength);
+    if (cudaDeviceInputData) {
         cudaFree(cudaDeviceRuleset);
+        cudaFree(cudaDeviceInputData);
+        cudaFree(cudaDeviceOutputData);
     }
 }
 
 void
-GolCuda::clearResultCube() {
-
+GolCuda::clearOutputCube() {
+    cube->clear();
     // 256 threads per block is a healthy number
     // dim3 blockDim(16, 16, 1);
     // dim3 gridDim(
@@ -63,32 +67,32 @@ GolCuda::clearResultCube() {
 }
 
 void
-GolCuda::allocResultCube(int sideLength) {
+GolCuda::allocOutputCube(int sideLength) {
 
-    if (cubeData)
-        delete cubeData;
-    cubeData = new Cube(sideLength);
+    if (cube)
+        delete cube;
+        cube = new Cube(sideLength);
 }
-
+ 
 const Cube*
-GolCuda::getResultCube() {
+GolCuda::getCube() {
 
     // Need to copy contents of the rendered image from device memory
     // before we expose the Image object to the caller
 
-    // printf("Copying image data from device\n");
+    printf("Copying image data from device\n");
 
-    // cudaMemcpy(cubeData,
-    //            cudaDeviceData,
-    //            size of data :),
-    //            cudaMemcpyDeviceToHost);
+    cudaMemcpy(cube->data,
+               cudaDeviceOutputData,
+               sizeof(int) * sideLength * sideLength * sideLength,
+               cudaMemcpyDeviceToHost);
 
-    // return cubeData;
+    return cube;
 }
 
 void
-GolCuda::loadInput(char* file) {
-    // loadInput(file, sideLength, ruleset);
+GolCuda::loadInput(char* file, int n) {
+    loadCubeInput(file, sideLength, ruleset, inputData, n);
 }
 
 void
@@ -107,7 +111,7 @@ GolCuda::setup() {
         cudaDeviceProp deviceProps;
         cudaGetDeviceProperties(&deviceProps, i);
         name = deviceProps.name;
-        if (name.compare("GeForce RTX 2080") == 0)
+        if (name.compare("NVIDIA GeForce RTX 2080") == 0)
         {
             isFastGPU = true;
         }
@@ -132,17 +136,14 @@ GolCuda::setup() {
     //
     // See the CUDA Programmer's Guide for descriptions of
     // cudaMalloc and cudaMemcpy
+    int cubeSize = sideLength * sideLength * sideLength;
 
-    cudaMalloc(&sideLength, sizeof(int));
-    cudaMalloc(&ruleset, sizeof(int) * 56);
-    cudaMalloc(&cudaDeviceSideLength, sizeof(int));
     cudaMalloc(&cudaDeviceRuleset, sizeof(int) * 56);
-    cudaMalloc(&cudaDeviceData, sizeof(int) * (*sideLength) * (*sideLength) * (*sideLength));
+    cudaMalloc(&cudaDeviceInputData, sizeof(int) * cubeSize);
+    cudaMalloc(&cudaDeviceOutputData, sizeof(int) * cubeSize);
 
-    cudaMemcpy(cudaDeviceSideLength, sideLength, sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(int) * 56, cudaMemcpyHostToDevice);
-    cudaMemcpy(cudaDeviceData, cubeData, sizeof(int) * (*sideLength) * (*sideLength) * (*sideLength), cudaMemcpyHostToDevice);
-    
+    cudaMemcpy(cudaDeviceInputData, inputData, sizeof(int) * cubeSize, cudaMemcpyHostToDevice);
 
     // Initialize parameters in constant memory.  We didn't talk about
     // constant memory in class, but the use of read-only constant
@@ -153,14 +154,16 @@ GolCuda::setup() {
     // Guide for more information about constant memory.
 
     GlobalConstants params;
-    params.cubeData = cudaDeviceData;
-    params.sideLength = cudaDeviceSideLength;
+    params.sideLength = sideLength;
+    params.inputData = cudaDeviceInputData;
+    params.outputData = cudaDeviceOutputData;
     params.ruleset = cudaDeviceRuleset;
-
+    
     cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
 }
 
 void
 GolCuda::doIteration() {
+    // printf("HEY im in cuda and i also loaded the sideLength of: %d!\n", sideLength);
     return;
 }

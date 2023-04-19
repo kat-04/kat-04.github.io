@@ -86,15 +86,9 @@ tuple<map<int, bool>, bool, int> parseRules(string line) {
 }
 
 
-int golSequential(int argc, char** argv, string outputDir)
+int golSequential(int argc, char** argv, std::string outputDir)
 {
     //TODO: timing code (output to log and/or print)
-
-    //parse args
-    if (argc != 4) {
-        cerr << "Usage: " << argv[0] << " input_file number_of_frames side_length" << endl;
-        return 1;
-    }
     string inputFile = argv[1];
     int numFrames = stoi(argv[2]);
     int sideLength = stoi(argv[3]);
