@@ -17,8 +17,10 @@
 
 struct GlobalConstants {
     int sideLength;
+    bool isMoore;
+    int numStates;
     int* outputData;
-    int* ruleset;
+    bool* ruleset;
     int* inputData;
 };
 
@@ -26,6 +28,9 @@ __constant__ GlobalConstants cuConstIterationParams;
 
 GolCuda::GolCuda() {
     sideLength = 0;
+    isMoore = true;
+    numStates = 0;
+
     cube = NULL;
     ruleset = NULL;
     inputData = NULL;
@@ -90,9 +95,9 @@ GolCuda::getCube() {
     return cube;
 }
 
-void
-GolCuda::loadInput(char* file, int n) {
-    loadCubeInput(file, sideLength, ruleset, inputData, n);
+int
+GolCuda::loadInput(char* file, int n, char* outputDir) {
+    return loadCubeInput(file, sideLength, ruleset, numStates, isMoore, inputData, n, outputDir);
 }
 
 void
@@ -138,11 +143,11 @@ GolCuda::setup() {
     // cudaMalloc and cudaMemcpy
     int cubeSize = sideLength * sideLength * sideLength;
 
-    cudaMalloc(&cudaDeviceRuleset, sizeof(int) * 56);
+    cudaMalloc(&cudaDeviceRuleset, sizeof(bool) * 54);
     cudaMalloc(&cudaDeviceInputData, sizeof(int) * cubeSize);
     cudaMalloc(&cudaDeviceOutputData, sizeof(int) * cubeSize);
 
-    cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(int) * 56, cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(bool) * 54, cudaMemcpyHostToDevice);
     cudaMemcpy(cudaDeviceInputData, inputData, sizeof(int) * cubeSize, cudaMemcpyHostToDevice);
 
     // Initialize parameters in constant memory.  We didn't talk about
@@ -155,6 +160,8 @@ GolCuda::setup() {
 
     GlobalConstants params;
     params.sideLength = sideLength;
+    params.isMoore = isMoore;
+    params.numStates = numStates;
     params.inputData = cudaDeviceInputData;
     params.outputData = cudaDeviceOutputData;
     params.ruleset = cudaDeviceRuleset;
@@ -164,6 +171,14 @@ GolCuda::setup() {
 
 void
 GolCuda::doIteration() {
-    // printf("HEY im in cuda and i also loaded the sideLength of: %d!\n", sideLength);
+    // printf("sideLength: %d, numStates: %d, isMoore %d\n", sideLength, numStates, isMoore);
+    // printf("ruleset: ");
+    // for (int i = 0; i < 54; i++) {
+    //     printf("%d, ", ruleset[i]);
+    // }
+    // printf("\n, inputData: ");
+    // for (int i = 0; i < sideLength * sideLength * sideLength; i++) {
+    //     printf("%d: %d, ", i, inputData[i]);
+    // }
     return;
 }

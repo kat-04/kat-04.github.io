@@ -10,13 +10,16 @@ class GolCuda {
 
 private:
     int sideLength;
+    bool isMoore;
+    int numStates;
+    
     Cube* cube;
-    int* ruleset;
+    bool* ruleset;
     int* inputData;
 
     int* cudaDeviceInputData;
     int* cudaDeviceOutputData;
-    int* cudaDeviceRuleset;
+    bool* cudaDeviceRuleset;
 public:
 
     GolCuda();
@@ -26,7 +29,7 @@ public:
 
     void setup();
 
-    void loadInput(char* file, int n);
+    int loadInput(char* file, int n, char* outputDir);
 
     void allocOutputCube(int sideLength);
 
