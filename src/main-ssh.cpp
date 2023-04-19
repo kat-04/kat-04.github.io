@@ -1,4 +1,3 @@
-// #include "gol-sequential.h"
 #include <iostream>
 #include <string>
 #include "gol-sequential.h"
