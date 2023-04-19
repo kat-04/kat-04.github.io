@@ -9,28 +9,28 @@ struct Cube;
 class GolCuda {
 
 private:
-    Cube* cubeData;
-
-    int* sideLength;
+    int sideLength;
+    Cube* cube;
     int* ruleset;
+    int* inputData;
 
-    Cube* cudaDeviceData;
+    int* cudaDeviceInputData;
+    int* cudaDeviceOutputData;
     int* cudaDeviceRuleset;
-    int* cudaDeviceSideLength;
 public:
 
     GolCuda();
     virtual ~GolCuda();
 
-    const Cube* getResultCube();
+    const Cube* getCube();
 
     void setup();
 
-    void loadInput(char* file);
+    void loadInput(char* file, int n);
 
-    void allocResultCube(int sideLength);
+    void allocOutputCube(int sideLength);
 
-    void clearResultCube();
+    void clearOutputCube();
 
     void doIteration();
 
