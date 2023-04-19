@@ -1,0 +1,149 @@
+<!DOCTYPE HTML>
+<!--
+	Hyperspace by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>3D Conway's Game of Life</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<a href="index.html" class="title">3D Conway's Game of Life</a>
+				<nav>
+					<ul>
+						<li><a href="index.html">Home</a></li>
+						<li><a href="elements.html">Demo</a></li>
+					</ul>
+				</nav>
+			</header>
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Main -->
+					<section id="main" class="wrapper">
+						<div class="inner">
+							<h1 class="major">Project Milestone Report</h1>
+                            <h2>Summary</h2>
+                            <p>To reiterate our project goals, we will be implementing different parallel implementations of Conway's Game of Life in 3D. We  will be using the NVIDIA GPUs on the GHC machines for our CUDA implementation and the PSC machines for the OpenMP implementation.</p>
+                            <p>As for our progress so far, we have completed the sequential implementation, the OpenGL debug renderer, and set up for the CUDA implementation. Using our sequential implementation, we are able to take in a variety of input files and rule-sets and output the correct results. These can then be neatly visualized with our renderer for easier debugging.</p>
+                            <h2>Goals and Deliverables</h2>
+                            <p>We will discuss our progress on each of our four original planned deliverables and our thoughts on the feasibility of the stretch goals. Note that we still believe that we will be able to produce all four planned deliverables by the poster session.</p>
+                            <h3>Sequential Implementation</h3>
+                            <p>We have completed and rigorously tested a sequential implementation in C++ that takes in a starting state and rule-set, generates output for an inputted number of frames, and prints the time taken for computation. To test this, we also created test input files that demonstrate the correctness of the implementation.</p>
+                            <h3>Parallel CUDA Implementation</h3>
+                            <p>We have a planned out approach for our CUDA implementation, and have finished all of the compilation and file outlines related to this deliverable. Creating our own CUDA-compatible Makefiles and foundational CUDA code took longer than expected and put us a little behind schedule on this goal, but we are now fully ready to tackle the algorithm implementation as our next step.</p>
+                            <h3>Parallel OpenMP Implementation</h3>
+                            <p>We have a general idea of our approach and are currently working on setup for this deliverable. We assume creating the setup can be done fairly quickly as we have experience from setting up Cuda with CMake.</p>
+                            <h3>Visualizations for Debugging Purposes in OpenGL</h3>
+                            <p>We have created an interactive visualizer for our output files. Using the generated output from our sequential implementation, we can view the results frame by frame, change the currently showing frame forward/back one, and move the camera around in 3D space. This has allowed us to speed up the debugging and testing process as we can now more easily see how the output looks in 3D space. For example, some of our test cases output a repeating pattern that can be easily recognized. The renderer does slow down significantly as we reach larger, more dense test cases (as in a mostly filled cube with side length of greater than 100), but it consistently runs above 60 frames per second on smaller cases and is usable (albeit a bit slow) for larger ones. However, since we have the ability to pause frames, our rendering speed is very fast when paused, allowing us to view the output very quickly.</p>
+                            <h3>Stretch Goals</h3>
+                            <p>Throughout our development of the sequential alogirhtm and OpenGL visualizer, we realized that two of our stretch goals were fairly easy additions. Thus, we have already added the ability to experiment with various rulesets by including the ruleset in the input and adding additional parsing of our input files. Additionally, we made the visualizer interactive by being able to manually change the current frame and move the camera with your mouse and/or keyboard controls.</p>
+                            <p>We will likely not be able to complete the other two stretch goals (an OpenMPI implementation and integration of our rendering code with CUDA) as they are both significantly more involved, but we will keep the option open if our planned deliverables are completed ahead of schedule.</p>
+                            
+                            <h2>Planned Demo</h2>
+                            <p>We will have two parts to our demo: an analysis section with speedup graphs and video demos of interesting results using our renderer.</p>
+                            <h3>Speedup Analysis</h3>
+                            <p>This part of the poster session will showcase relative speedup of our three implementations on a variety of test cases. Furthermore, it will included a detailed analysis of these results and discuss the strengths/weaknesses of each implementation.</p>
+                            <h3>Video Demo</h3>
+                            <p>We will show off our most fun/interesting test cases via a compilation video. Each test case in the video will be rendered using our OpenGL renderer. We will also keep the option of a live implementation (using one of our own computers) open, since it would be fairly easy to render pre-compiled scenes.</p>
+                            <h2>Issues</h2>
+                            <p>The main issue is just that setting up the Makefiles/boilerplate code for CUDA and OpenMP has been much more difficult than we expected. A variety of errors stemming from GHC machine compatibility, integrating OpenGL things, etc. pushed back our project timeline slightly. We still have to get OpenMP up and running, but we hope that this one will go a little smoother now that we have some experience with creating these files.</p>
+                            <h2>Updated Schedule</h2>
+                            <div class="table-wrapper">
+                                <table class="alt">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Goal</th>
+                                            <th>Assigned To</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>April 19</td>
+                                            <td>Milestone report due</td>
+                                            <td>All</td>
+                                        </tr>
+                                        <tr>
+                                            <td>April 20-23</td>
+                                            <td>Setup input and output for CUDA</td>
+                                            <td>Kate</td>
+                                        </tr>
+                                        <tr>
+                                            <td>April 20-23</td>
+                                            <td>Setup input and output for OpenMP</td>
+                                            <td>Katie</td>
+                                        </tr>
+                                        <tr>
+                                            <td>April 24-27</td>
+                                            <td>Finish basic CUDA kernel algorithm</td>
+                                            <td>Kate</td>
+                                        </tr>
+                                        <tr>
+                                            <td>April 24-27</td>
+                                            <td>Finish basic OpenMP idea</td>
+                                            <td>Katie</td>
+                                        </tr>
+                                        <tr>
+                                            <td>April 28-31</td>
+                                            <td>Finish CUDA algorithm</td>
+                                            <td>Kate</td>
+                                        </tr>
+                                        <tr>
+                                            <td>April 28-31</td>
+                                            <td>Finish OpenMP</td>
+                                            <td>Katie</td>
+                                        </tr>
+                                        <tr>
+                                            <td>May 1-2</td>
+                                            <td>Wrap up code and start report</td>
+                                            <td>All</td>
+                                        </tr>
+                                        <tr>
+                                            <td>May 3-4</td>
+                                            <td>Complete final report and presentation</td>
+                                            <td>All</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+					</section>
+
+			</div>
+
+		<!-- Footer -->
+			<footer id="footer" class="wrapper alt">
+				<div class="inner">
+					<ul class="menu">
+						<li>&copy; Untitled. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+					</ul>
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
+

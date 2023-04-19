@@ -1,0 +1,3 @@
+/Users/katherinelu/Documents/15418/kat-04.github.io/CMakeFiles/GOL3D.dir
+/Users/katherinelu/Documents/15418/kat-04.github.io/CMakeFiles/edit_cache.dir
+/Users/katherinelu/Documents/15418/kat-04.github.io/CMakeFiles/rebuild_cache.dir
