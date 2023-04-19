@@ -42,10 +42,14 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
 
     Cube* resultCube;
 
+    double totalSimulationTime = 0.0;
+
     //time start
     for (int f = 0; f < numFrames; f++) {
+        Timer frameTimer;
         golCuda->doIteration();
-        //time end
+        totalSimulationTime += frameTimer.elapsed();
+
         resultCube = golCuda->getCube();
         golCuda->advanceFrame();
         //write to output file
@@ -66,7 +70,6 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
         output.close();
     }
     
-    
-
+    printf("total simulation time: %.6fs\n", totalSimulationTime);
     return 0;
 }
