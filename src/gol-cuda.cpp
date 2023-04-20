@@ -38,12 +38,38 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
         return 1;
     }
     golCuda->setup();
-    //golCuda->clearOutputCube();
-    //time start
-    golCuda->doIteration();
-    //time end
-    //golCuda->getCube();
-    //write to output file
+    golCuda->clearOutputCube();
 
+    Cube* resultCube;
+
+    double totalSimulationTime = 0.0;
+
+    //time start
+    for (int f = 0; f < numFrames; f++) {
+        Timer frameTimer;
+        golCuda->doIteration();
+        totalSimulationTime += frameTimer.elapsed();
+
+        resultCube = golCuda->getCube();
+        golCuda->advanceFrame();
+        //write to output file
+        ofstream output; 
+        std::string frameOutputFile = outputPath + to_string(f+1) + ".txt";
+        output.open(frameOutputFile);
+       
+        
+        output << sideLength << std::endl;
+        for (int i = 0; i < sideLength * sideLength * sideLength; i++) {
+            int z = (i / (sideLength * sideLength)) % sideLength;
+            int y = (i / sideLength) % sideLength;
+            int x = i % sideLength;
+            if (resultCube->data[i]) {
+                output << x << " " << y << " " << z << endl;
+            }
+        }
+        output.close();
+    }
+    
+    printf("total simulation time: %.6fs\n", totalSimulationTime);
     return 0;
 }

@@ -25,7 +25,7 @@ public:
     GolCuda();
     virtual ~GolCuda();
 
-    const Cube* getCube();
+    Cube* getCube();
 
     void setup();
 
@@ -34,6 +34,8 @@ public:
     void allocOutputCube(int sideLength);
 
     void clearOutputCube();
+
+    void advanceFrame();
 
     void doIteration();
 
