@@ -30,7 +30,7 @@ __constant__ GlobalConstants cuConstIterationParams;
 
 __global__ void kernelDoIterationMoore() {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int n = *(int*)&cuConstIterationParams.sideLength;
+    int n = cuConstIterationParams.sideLength;
     if (index < 0 || index >= n * n * n) {
         return;
     }
@@ -47,25 +47,25 @@ __global__ void kernelDoIterationMoore() {
                 if (i >= 0 && j >= 0 && k >= 0 && i < n && j < n && k < n) {
                     if (!(x == i && y == j && z == k)) { //don't include self
                         linIndex = (k * n * n) + (j * n) + i;
-                        numAlive += *(int*)&cuConstIterationParams.inputData[linIndex] ? 1 : 0;
+                        numAlive += cuConstIterationParams.inputData[linIndex] ? 1 : 0;
                     }
                 }
             }
         }
     }
     // printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, *(int*)&cuConstIterationParams.inputData[index]);
-    if (*(int*)&cuConstIterationParams.inputData[index]) {
+    if (cuConstIterationParams.inputData[index]) {
         // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
-        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[27 + numAlive])) ? 1 : 0;
+        cuConstIterationParams.outputData[index] = cuConstIterationParams.ruleset[27 + numAlive] ? 1 : 0;
     } else {
         // printf("x: %d, y: %d, z: %d is dead rn \n");
-        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[numAlive])) ? 1 : 0;
+        cuConstIterationParams.outputData[index] = cuConstIterationParams.ruleset[numAlive] ? 1 : 0;
     }
 }
 
 __global__ void kernelDoIterationVonNeumann() {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int n = *(int*)&cuConstIterationParams.sideLength;
+    int n = cuConstIterationParams.sideLength;
     if (index < 0 || index >= n * n * n) {
         return;
     }
@@ -75,19 +75,19 @@ __global__ void kernelDoIterationVonNeumann() {
     int x = index % n;
     int numAlive = 0;
 
-    numAlive += ((x - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + (y * n) + x - 1]) ? 1 : 0;
-    numAlive += ((x + 1 < n) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + (y * n) + x + 1]) ? 1 : 0;
-    numAlive += ((y - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + ((y-1) * n) + x]) ? 1 : 0;
-    numAlive += ((y + 1 < n) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + ((y+1) * n) + x]) ? 1 : 0;
-    numAlive += ((z - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[((z-1) * n * n) + (y * n) + x]) ? 1 : 0;
-    numAlive += ((z + 1 < n) && *(int*)&cuConstIterationParams.inputData[((z+1) * n * n) + (y * n) + x]) ? 1 : 0;
+    numAlive += ((x - 1 >= 0) && cuConstIterationParams.inputData[(z * n * n) + (y * n) + x - 1]) ? 1 : 0;
+    numAlive += ((x + 1 < n) && cuConstIterationParams.inputData[(z * n * n) + (y * n) + x + 1]) ? 1 : 0;
+    numAlive += ((y - 1 >= 0) && cuConstIterationParams.inputData[(z * n * n) + ((y-1) * n) + x]) ? 1 : 0;
+    numAlive += ((y + 1 < n) && cuConstIterationParams.inputData[(z * n * n) + ((y+1) * n) + x]) ? 1 : 0;
+    numAlive += ((z - 1 >= 0) && cuConstIterationParams.inputData[((z-1) * n * n) + (y * n) + x]) ? 1 : 0;
+    numAlive += ((z + 1 < n) && cuConstIterationParams.inputData[((z+1) * n * n) + (y * n) + x]) ? 1 : 0;
 
-    if (*(int*)&cuConstIterationParams.inputData[index]) {
+    if (cuConstIterationParams.inputData[index]) {
         // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
-        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[27 + numAlive])) ? 1 : 0;
+        cuConstIterationParams.outputData[index] = cuConstIterationParams.ruleset[27 + numAlive] ? 1 : 0;
     } else {
         // printf("x: %d, y: %d, z: %d is dead rn \n");
-        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[numAlive])) ? 1 : 0;
+        cuConstIterationParams.outputData[index] = cuConstIterationParams.ruleset[numAlive] ? 1 : 0;
     }
 }
 

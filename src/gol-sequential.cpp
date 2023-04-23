@@ -11,6 +11,7 @@
 #include <iostream> //for cout
 #include "timing.h"
 #include "gol-sequential.h"
+#include "parse.h"
 
 //RULE FORMAT: survival/birth/numStates/isMoore
 //MAP FORMAT: keys 0-26 -> birth for that num neighbors,
@@ -18,74 +19,7 @@
 
 using namespace std; 
 
-void printVoxel(int x, int y, int z, bool alive) {
-    cout << x << ", " << y << ", " << z << ", alive: " << alive << endl;
-}
-
-vector<string> tokenizeLine(string &line, const char* delim) {
-    vector<string> out;
-    char *token = std::strtok(const_cast<char*>(line.c_str()), delim); 
-    while (token != nullptr) 
-    { 
-        out.push_back(string(token)); 
-        token = strtok(nullptr, delim); 
-    } 
-    return out;
-}
-
-tuple<map<int, bool>, bool, int> parseRules(string line) {
-    const char* slashDelim = "/";
-    const char* commaDelim = ",";
-    const char* dashDelim = "-";
-    map<int, bool> ruleMap;
-
-    vector<string> rules = tokenizeLine(line, slashDelim);
-    string survival = rules[0];
-    string birth = rules[1];
-    int numStates = stoi(rules[2]);
-    bool isMoore = (rules[3] == "M");
-
-    //init map
-    for (int i = 0; i < 54; i++) {
-        ruleMap[i] = false;
-    }
-
-    //parse survival and birth rules
-    vector<string> survivalSubsets = tokenizeLine(survival, commaDelim);
-    vector<string> birthSubsets = tokenizeLine(birth, commaDelim);
-    
-    for (int i = 0; i < (int)birthSubsets.size(); i++) {
-        if (birthSubsets[i].find('-') == string::npos) {    
-            if (birthSubsets[i] != "x") {
-                ruleMap[stoi(birthSubsets[i])] = true;
-            }
-            
-        } else {
-            vector<string> range = tokenizeLine(birthSubsets[i], dashDelim);
-            for (int j = stoi(range[0]); j <= stoi(range[1]); j++) {
-                ruleMap[j] = true;
-            }
-        }
-    }
-
-    for (int i = 0; i < (int)survivalSubsets.size(); i++) {
-        if (survivalSubsets[i].find('-') == string::npos) {  
-            if (survivalSubsets[i] != "x") {
-                ruleMap[27 + stoi(survivalSubsets[i])] = true;
-            }  
-        } else {
-            vector<string> range = tokenizeLine(survivalSubsets[i], dashDelim);
-            for (int j = 27 + stoi(range[0]); j <= 27 + stoi(range[1]); j++) {
-                ruleMap[j] = true;
-            }
-        }
-    }  
-
-    return make_tuple(ruleMap, isMoore, numStates);
-}
-
-
-int golSequential(int argc, char** argv, std::string outputDir)
+int golSequential(int argc, char** argv, string outputDir)
 {
     //TODO: timing code (output to log and/or print)
     string inputFile = argv[1];
