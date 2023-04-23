@@ -1,26 +1,27 @@
 #ifndef  __CUBE_H__
 #define  __CUBE_H__
 
+#include <cmath>
 
 struct Cube {
 
-    Cube(int n) {
+    Cube(uint32_t n) {
         sideLength = n;
-        data = new int[sideLength * sideLength * sideLength];
+        data = new uint8_t[(sideLength * sideLength * sideLength + 7) / 8];
     }
 
     void clear() {
 
-        int numVoxels = sideLength * sideLength * sideLength;
-        int* ptr = data;
-        for (int i=0; i<numVoxels; i++) {
+        uint32_t numVoxels = ((sideLength * sideLength * sideLength + 7) / 8);
+        uint8_t* ptr = data;
+        for (uint32_t i=0; i<numVoxels; i++) {
             ptr[0] = 0;
             ptr+=1;
         }
     }
 
-    int sideLength;
-    int* data;
+    uint32_t sideLength;
+    uint8_t* data;
 };
 
 

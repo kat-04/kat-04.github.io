@@ -4,6 +4,6 @@
 #include "golCuda.h"
 
 int
-loadCubeInput(char* file, int& sideLength, bool*& ruleset, int& numStates, bool&isMoore, int*& inputData, int n, char* outputDir);
+loadCubeInput(char* file, uint32_t& sideLength, bool*& ruleset, int& numStates, bool& isMoore, uint8_t*& inputData, uint32_t n, char* outputDir);
 
 #endif

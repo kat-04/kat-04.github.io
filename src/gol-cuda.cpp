@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <cstring>
+#include <cmath>
 #include <vector>
 #include <tuple>
 #include <fstream>
@@ -14,11 +15,6 @@
 #include "cube.h"
 #include "golCuda.h"
 
-
-//TODO: move to iterationLoader separate file so can include in cuda file
-// void loadIterationInput(char* file, int*& sideLength, int*& ruleset, int*& cubeData) {
-
-// }
 
 int gol_cuda(int argc, char** argv, std::string fileDir) {
     
@@ -63,11 +59,13 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
             int z = (i / (sideLength * sideLength)) % sideLength;
             int y = (i / sideLength) % sideLength;
             int x = i % sideLength;
-            if (resultCube->data[i]) {
+            int bit = i % 8;
+            if (((resultCube->data[i / 8]) >> (7 - bit)) & 1) {
                 output << x << " " << y << " " << z << endl;
             }
         }
         output.close();
+        golCuda->clearOutputCube();
     }
     
     printf("total simulation time: %.6fs\n", totalSimulationTime);

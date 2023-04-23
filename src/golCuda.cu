@@ -11,6 +11,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <vector>
+#include <iostream>
+#include <cmath>
+#include <bitset>
 #include "cube.h"
 #include "fileLoader.h"
 #include "golCuda.h"
@@ -18,76 +21,149 @@
 #define BLOCK_SIZE 256
 
 struct GlobalConstants {
-    int sideLength;
+    uint32_t sideLength;
     bool isMoore;
     int numStates;
     bool* ruleset;
-    int* inputData;
-    int* outputData;
+    uint8_t* inputData;
+    uint8_t* outputData;
 };
 
 __constant__ GlobalConstants cuConstIterationParams;
 
 __global__ void kernelDoIterationMoore() {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int n = *(int*)&cuConstIterationParams.sideLength;
-    if (index < 0 || index >= n * n * n) {
+    uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t n = cuConstIterationParams.sideLength;
+    if (index >= (n * n * n + 7) / 8) {
         return;
     }
+    /* printf("Thread idx: %d\n", index); */
     
-    int z = (index / (n * n)) % n;
-    int y = (index / n) % n;
-    int x = index % n;
-    int linIndex;
+    // index of the first thing in the bit array
+    uint32_t bitIndex = index * 8;
+    /* printf("Bit idx: %d\n", bitIndex); */
+    uint32_t neighborBitIndex;
+    uint32_t neighborLinIndex;
+    int neighborBit;
+    uint8_t mask = 1;
     int numAlive = 0;
+    int status;
     // printf("doin index %d, x: %d, y: %d, z: %d\n", index, x, y, z);
-    for (int i = x - 1; i <= x + 1; i++) {
-        for (int j = y - 1; j <= y + 1; j++) {
-            for (int k = z - 1; k <= z + 1; k++) {
-                if (i >= 0 && j >= 0 && k >= 0 && i < n && j < n && k < n) {
-                    if (!(x == i && y == j && z == k)) { //don't include self
-                        linIndex = (k * n * n) + (j * n) + i;
-                        numAlive += *(int*)&cuConstIterationParams.inputData[linIndex] ? 1 : 0;
+    for (int bit = 0; bit < 8; bit++) {
+        /* printf("Bit idx: %d\n", bitIndex + bit); */
+        uint32_t z = ((bitIndex + bit) / (n * n)) % n;
+        uint32_t y = ((bitIndex + bit) / n) % n;
+        uint32_t x = (bitIndex + bit) % n;
+        /* printf("x: %d, y: %d, z: %d\n", x, y, z); */
+        for (uint32_t i = (x == 0) ? 0 : x - 1; i <= x + 1; i++) {
+            for (uint32_t j = (y == 0) ? 0 : y - 1; j <= y + 1; j++) {
+                for (uint32_t k = (z == 0) ? 0 : z - 1; k <= z + 1; k++) {
+                    /* printf("Hello from index %d and bit %d\n", index, bit); */
+                    if (i < n && j < n && k < n) {
+                        if (!(x == i && y == j && z == k)) { //don't include self
+                            neighborBitIndex = (k * n * n) + (j * n) + i;
+                            neighborLinIndex = neighborBitIndex / 8;
+                            neighborBit = neighborBitIndex % 8;
+                            /* if (index == 3 && bit == 0) { */
+                            /*     printf("i: %d, j: %d, k: %d\n", i, j, k); */
+                            /* } */
+                            numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
+                        }
                     }
                 }
             }
         }
-    }
-    // printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, *(int*)&cuConstIterationParams.inputData[index]);
-    if (*(int*)&cuConstIterationParams.inputData[index]) {
-        // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
-        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[27 + numAlive])) ? 1 : 0;
-    } else {
-        // printf("x: %d, y: %d, z: %d is dead rn \n");
-        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[numAlive])) ? 1 : 0;
+        /* printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, numAlive); */
+        /* printf("Helloooo\n"); */
+        if ((cuConstIterationParams.inputData[index] >> (7 - bit)) & mask) {
+            // OLD STATE IS ALIVE
+            /* printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive); */
+            status = cuConstIterationParams.ruleset[27 + numAlive] ? 1 : 0;
+            if (status) {
+                // alive
+                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+            } else {
+                // dead
+                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] & ~(1 << (7 - bit));
+            }
+        } else {
+            // OLD STATE IS DEAD
+            /* printf("x: %d, y: %d, z: %d is dead rn \n", x, y, z); */
+            status = cuConstIterationParams.ruleset[numAlive] ? 1 : 0;
+            cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+        }
+        numAlive = 0;
     }
 }
 
 __global__ void kernelDoIterationVonNeumann() {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int n = *(int*)&cuConstIterationParams.sideLength;
-    if (index < 0 || index >= n * n * n) {
+    uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t n = cuConstIterationParams.sideLength;
+    if (index >= (n * n * n + 7) / 8) {
         return;
     }
     
-    int z = (index / (n * n)) % n;
-    int y = (index / n) % n;
-    int x = index % n;
+    uint32_t bitIndex = index * 8;
+    uint32_t neighborBitIndex;
+    uint32_t neighborLinIndex;
+    int neighborBit;
+    uint8_t mask = 1;
     int numAlive = 0;
+    int status;
 
-    numAlive += ((x - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + (y * n) + x - 1]) ? 1 : 0;
-    numAlive += ((x + 1 < n) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + (y * n) + x + 1]) ? 1 : 0;
-    numAlive += ((y - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + ((y-1) * n) + x]) ? 1 : 0;
-    numAlive += ((y + 1 < n) && *(int*)&cuConstIterationParams.inputData[(z * n * n) + ((y+1) * n) + x]) ? 1 : 0;
-    numAlive += ((z - 1 >= 0) && *(int*)&cuConstIterationParams.inputData[((z-1) * n * n) + (y * n) + x]) ? 1 : 0;
-    numAlive += ((z + 1 < n) && *(int*)&cuConstIterationParams.inputData[((z+1) * n * n) + (y * n) + x]) ? 1 : 0;
+    for (int bit = 0; bit < 8; bit++) {
+        uint32_t z = ((bitIndex + bit) / (n * n)) % n;
+        uint32_t y = ((bitIndex + bit) / n) % n;
+        uint32_t x = (bitIndex + bit) % n;
 
-    if (*(int*)&cuConstIterationParams.inputData[index]) {
-        // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
-        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[27 + numAlive])) ? 1 : 0;
-    } else {
-        // printf("x: %d, y: %d, z: %d is dead rn \n");
-        *(int*)(&cuConstIterationParams.outputData[index]) = (*(bool*)(&cuConstIterationParams.ruleset[numAlive])) ? 1 : 0;
+        neighborBitIndex = (z * n * n) + (y * n) + x - 1;
+        neighborLinIndex = neighborBitIndex / 8;
+        neighborBit = neighborBitIndex % 8;
+        if (x > 0 && x < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
+        
+        neighborBitIndex = (z * n * n) + (y * n) + x + 1;
+        neighborLinIndex = neighborBitIndex / 8;
+        neighborBit = neighborBitIndex % 8;
+        if (x + 1 < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
+
+        neighborBitIndex = (z * n * n) + ((y-1) * n) + x;
+        neighborLinIndex = neighborBitIndex / 8;
+        neighborBit = neighborBitIndex % 8;
+        if (y > 0 && y < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
+
+        neighborBitIndex = (z * n * n) + ((y+1) * n) + x;
+        neighborLinIndex = neighborBitIndex / 8;
+        neighborBit = neighborBitIndex % 8;
+        if (y + 1 < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
+
+        neighborBitIndex = ((z-1) * n * n) + (y * n) + x;
+        neighborLinIndex = neighborBitIndex / 8;
+        neighborBit = neighborBitIndex % 8;
+        if (z > 0 && z < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
+
+        neighborBitIndex = ((z+1) * n * n) + (y * n) + x;
+        neighborLinIndex = neighborBitIndex / 8;
+        neighborBit = neighborBitIndex % 8;
+        if (z + 1 < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
+
+        // printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, *(int*)&cuConstIterationParams.inputData[index]);
+        if ((cuConstIterationParams.inputData[index] >> (7 - bit)) & mask) {
+            // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
+            status = cuConstIterationParams.ruleset[27 + numAlive] ? 1 : 0;
+            if (status) {
+                // alive
+                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+            } else {
+                // dead
+                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] & ~(1 << (7 - bit));
+            }
+        } else {
+            // printf("x: %d, y: %d, z: %d is dead rn \n");
+            status = cuConstIterationParams.ruleset[numAlive] ? 1 : 0;
+            cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+        }
+
+        numAlive = 0;
     }
 }
 
@@ -131,11 +207,11 @@ GolCuda::clearOutputCube() {
 }
 
 void
-GolCuda::allocOutputCube(int sideLength) {
-
-    if (cube)
-        delete cube;
-        cube = new Cube(sideLength);
+GolCuda::allocOutputCube(uint32_t sideLength) {
+    /* printf("%d\n", (sideLength * sideLength * sideLength + 7) / 8); */
+    printf("Size of data: %f MB\n", sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / (8.f * 1024.f * 1024.f)));
+    if (cube) delete cube;
+    cube = new Cube(sideLength);
 }
  
 Cube*
@@ -148,14 +224,14 @@ GolCuda::getCube() {
 
     cudaMemcpy(cube->data,
                cudaDeviceOutputData,
-               sizeof(int) * sideLength * sideLength * sideLength,
+               sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8),
                cudaMemcpyDeviceToHost);
     
     return cube;
 }
 
 int
-GolCuda::loadInput(char* file, int n, char* outputDir) {
+GolCuda::loadInput(char* file, uint32_t n, char* outputDir) {
     return loadCubeInput(file, sideLength, ruleset, numStates, isMoore, inputData, n, outputDir);
 }
 
@@ -200,14 +276,14 @@ GolCuda::setup() {
     //
     // See the CUDA Programmer's Guide for descriptions of
     // cudaMalloc and cudaMemcpy
-    int cubeSize = sideLength * sideLength * sideLength;
+    uint32_t cubeSize = (sideLength * sideLength * sideLength + 7) / 8;
 
     cudaMalloc(&cudaDeviceRuleset, sizeof(bool) * 54);
-    cudaMalloc(&cudaDeviceInputData, sizeof(int) * cubeSize);
-    cudaMalloc(&cudaDeviceOutputData, sizeof(int) * cubeSize);
+    cudaMalloc(&cudaDeviceInputData, sizeof(uint8_t) * cubeSize);
+    cudaMalloc(&cudaDeviceOutputData, sizeof(uint8_t) * cubeSize);
 
     cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(bool) * 54, cudaMemcpyHostToDevice);
-    cudaMemcpy(cudaDeviceInputData, inputData, sizeof(int) * cubeSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * cubeSize, cudaMemcpyHostToDevice);
 
     // Initialize parameters in constant memory.  We didn't talk about
     // constant memory in class, but the use of read-only constant
@@ -233,17 +309,28 @@ void
 GolCuda::advanceFrame() {
     cudaMemcpy(inputData,
         cudaDeviceOutputData,
-        sizeof(int) * sideLength * sideLength * sideLength,
+        sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8),
         cudaMemcpyDeviceToHost);
 
-    cudaMemcpy(cudaDeviceInputData, inputData, sizeof(int) * sideLength * sideLength * sideLength, cudaMemcpyHostToDevice);
+    cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8), cudaMemcpyHostToDevice);
     //cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
 }
 
 void
 GolCuda::doIteration() {    
+
+    /* printf("sideLength: %d, numStates: %d, isMoore %d\n", sideLength, numStates, isMoore); */
+    /* printf("ruleset: "); */
+    /* for (int i = 0; i < 54; i++) { */
+    /*     printf("%d, ", ruleset[i]); */
+    /* } */
+    /* printf("\n, inputData: "); */
+    /* for (uint32_t i = 0; i < (sideLength * sideLength * sideLength + 7) / 8; i++) { */
+    /*     std::cout << i << ": " << std::bitset<8>(inputData[i]) << std::endl; */
+    /* } */
+
     dim3 blockDim(BLOCK_SIZE);
-    dim3 gridDim(((sideLength * sideLength * sideLength) + blockDim.x - 1) / blockDim.x);
+    dim3 gridDim((((sideLength * sideLength * sideLength + 7) / 8) + blockDim.x - 1) / blockDim.x);
 
     if (isMoore) {
         kernelDoIterationMoore<<<gridDim, blockDim>>>(); 

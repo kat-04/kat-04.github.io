@@ -12,6 +12,7 @@
 #include <omp.h>
 #include <iostream> //for cout
 #include "timing.h"
+#include "parse.h"
 #include "gol-openmp.h"
 
 //RULE FORMAT: survival/birth/numStates/isMoore
@@ -24,61 +25,61 @@ void oprintVoxel(int x, int y, int z, bool alive) {
     cout << x << ", " << y << ", " << z << ", alive: " << alive << endl;
 }
 
-vector<string> otokenizeLine(string &line, const char* delim) {
-    vector<string> out;
-    char *token = std::strtok(const_cast<char*>(line.c_str()), delim); 
-    while (token != nullptr) 
-    { 
-        out.push_back(string(token)); 
-        token = strtok(nullptr, delim); 
-    } 
-    return out;
-}
+/* vector<string> otokenizeLine(string &line, const char* delim) { */
+/*     vector<string> out; */
+/*     char *token = std::strtok(const_cast<char*>(line.c_str()), delim); */ 
+/*     while (token != nullptr) */ 
+/*     { */ 
+/*         out.push_back(string(token)); */ 
+/*         token = strtok(nullptr, delim); */ 
+/*     } */ 
+/*     return out; */
+/* } */
 
-tuple<map<int, bool>, bool, int> oparseRules(string line) {
-    const char* slashDelim = "/";
-    const char* commaDelim = ",";
-    const char* dashDelim = "-";
-    map<int, bool> ruleMap;
+/* tuple<map<int, bool>, bool, int> oparseRules(string line) { */
+/*     const char* slashDelim = "/"; */
+/*     const char* commaDelim = ","; */
+/*     const char* dashDelim = "-"; */
+/*     map<int, bool> ruleMap; */
 
-    vector<string> rules = otokenizeLine(line, slashDelim);
-    string survival = rules[0];
-    string birth = rules[1];
-    int numStates = stoi(rules[2]);
-    bool isMoore = (rules[3] == "M");
+/*     vector<string> rules = otokenizeLine(line, slashDelim); */
+/*     string survival = rules[0]; */
+/*     string birth = rules[1]; */
+/*     int numStates = stoi(rules[2]); */
+/*     bool isMoore = (rules[3] == "M"); */
 
-    //init map
-    for (int i = 0; i < 54; i++) {
-        ruleMap[i] = false;
-    }
+/*     //init map */
+/*     for (int i = 0; i < 54; i++) { */
+/*         ruleMap[i] = false; */
+/*     } */
 
-    //parse survival and birth rules
-    vector<string> survivalSubsets = otokenizeLine(survival, commaDelim);
-    vector<string> birthSubsets = otokenizeLine(birth, commaDelim);
-    for (int i = 0; i < (int)birthSubsets.size(); i++) {
-        if (birthSubsets[i].find('-') == string::npos) {    
-            ruleMap[stoi(birthSubsets[i])] = true;
-        } else {
-            vector<string> range = otokenizeLine(birthSubsets[i], dashDelim);
-            for (int j = stoi(range[0]); j <= stoi(range[1]); j++) {
-                ruleMap[j] = true;
-            }
-        }
-    }
+/*     //parse survival and birth rules */
+/*     vector<string> survivalSubsets = otokenizeLine(survival, commaDelim); */
+/*     vector<string> birthSubsets = otokenizeLine(birth, commaDelim); */
+/*     for (int i = 0; i < (int)birthSubsets.size(); i++) { */
+/*         if (birthSubsets[i].find('-') == string::npos) { */    
+/*             ruleMap[stoi(birthSubsets[i])] = true; */
+/*         } else { */
+/*             vector<string> range = otokenizeLine(birthSubsets[i], dashDelim); */
+/*             for (int j = stoi(range[0]); j <= stoi(range[1]); j++) { */
+/*                 ruleMap[j] = true; */
+/*             } */
+/*         } */
+/*     } */
 
-    for (int i = 0; i < (int)survivalSubsets.size(); i++) {
-        if (survivalSubsets[i].find('-') == string::npos) {    
-            ruleMap[27 + stoi(survivalSubsets[i])] = true;
-        } else {
-            vector<string> range = otokenizeLine(survivalSubsets[i], dashDelim);
-            for (int j = 27 + stoi(range[0]); j <= 27 + stoi(range[1]); j++) {
-                ruleMap[j] = true;
-            }
-        }
-    }  
+/*     for (int i = 0; i < (int)survivalSubsets.size(); i++) { */
+/*         if (survivalSubsets[i].find('-') == string::npos) { */    
+/*             ruleMap[27 + stoi(survivalSubsets[i])] = true; */
+/*         } else { */
+/*             vector<string> range = otokenizeLine(survivalSubsets[i], dashDelim); */
+/*             for (int j = 27 + stoi(range[0]); j <= 27 + stoi(range[1]); j++) { */
+/*                 ruleMap[j] = true; */
+/*             } */
+/*         } */
+/*     } */  
 
-    return make_tuple(ruleMap, isMoore, numStates);
-}
+/*     return make_tuple(ruleMap, isMoore, numStates); */
+/* } */
 
 
 int golParallel(int argc, char** argv)
@@ -131,12 +132,12 @@ int golParallel(int argc, char** argv)
     bool isMoore = false;
     while (getline(input, line)) {
         if (curLine == 0) {
-            tie(ruleMap, isMoore, numStates) = oparseRules(line);
+            tie(ruleMap, isMoore, numStates) = parseRules(line);
             
             outputInit << sideLength << endl;
         } else {
             //set voxel to on
-            coords = otokenizeLine(line, spaceDelim);
+            coords = tokenizeLine(line, spaceDelim);
             //TODO: should probably check for out of bounds input here and error
             cube[stoi(coords[0])][stoi(coords[1])][stoi(coords[2])] = true;
             outputInit << coords[0] << " " << coords[1] << " " << coords[2] << endl;
