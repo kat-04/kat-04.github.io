@@ -16,12 +16,12 @@
 #include "cube.h"
 
 
-int loadCubeInput(char* file, uint32_t& sideLength, bool*& ruleset, int& numStates, bool& isMoore,
-                  uint8_t*& inputData, uint32_t n, char* outputPath) {
+int loadCubeInput(char* file, uint64_t& sideLength, bool*& ruleset, int& numStates, bool& isMoore,
+                  uint8_t*& inputData, uint64_t n, char* outputPath) {
     std::fstream input;
     input.open(file, std::ios::in);
     std::string line;
-    uint32_t curLine = 0;
+    uint64_t curLine = 0;
     std::vector<std::string> coords;
     const char* spaceDelim = " ";
     inputData = new uint8_t[(n*n*n + 7) / 8];
@@ -33,7 +33,7 @@ int loadCubeInput(char* file, uint32_t& sideLength, bool*& ruleset, int& numStat
     std::ofstream outputInit; 
     outputInit.open(frameOutputFile);
 
-    uint32_t linearIndex = 0;
+    uint64_t linearIndex = 0;
     int bit = 0;
     uint8_t mask = 0;
 

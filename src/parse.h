@@ -15,7 +15,7 @@
 * \param z The x coordinate of the voxel
 * \param alive The state of the voxel
 */
-void printVoxel(uint32_t x, uint32_t y, uint32_t z, bool alive);
+void printVoxel(uint64_t x, uint64_t y, uint64_t z, bool alive);
 
 /**
 * \brief Tokenizes a single given line (of the input file)
