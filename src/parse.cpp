@@ -10,7 +10,7 @@
 using namespace std; 
 
 
-void printVoxel(int x, int y, int z, bool alive) {
+void printVoxel(uint32_t x, uint32_t y, uint32_t z, bool alive) {
     cout << x << ", " << y << ", " << z << ", alive: " << alive << endl;
 }
 
@@ -82,7 +82,7 @@ tuple<map<int, bool>, bool, int> parseRules(string line) {
 
 
 
-std::tuple<bool, int> parseRulesCuda(std::string line, bool *ruleset) {
+std::tuple<bool, int> parseRulesCuda(std::string line, bool *&ruleset) {
     const char* slashDelim = "/";
     const char* commaDelim = ",";
     const char* dashDelim = "-";

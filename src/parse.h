@@ -15,7 +15,7 @@
 * \param z The x coordinate of the voxel
 * \param alive The state of the voxel
 */
-void printVoxel(int x, int y, int z, bool alive);
+void printVoxel(uint32_t x, uint32_t y, uint32_t z, bool alive);
 
 /**
 * \brief Tokenizes a single given line (of the input file)
@@ -53,6 +53,6 @@ std::tuple<std::map<int, bool>, bool, int> parseRules(std::string line);
 *
 * \return True if the dog has enough energy, and false otherwise.
 */
-std::tuple<bool, int> parseRulesCuda(std::string line, bool *ruleset);
+std::tuple<bool, int> parseRulesCuda(std::string line, bool *&ruleset);
 
 #endif

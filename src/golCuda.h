@@ -9,16 +9,16 @@ struct Cube;
 class GolCuda {
 
 private:
-    int sideLength;
+    uint32_t sideLength;
     bool isMoore;
     int numStates;
     
     Cube* cube;
     bool* ruleset;
-    int* inputData;
+    uint8_t* inputData;
 
-    int* cudaDeviceInputData;
-    int* cudaDeviceOutputData;
+    uint8_t* cudaDeviceInputData;
+    uint8_t* cudaDeviceOutputData;
     bool* cudaDeviceRuleset;
 public:
 
@@ -29,9 +29,9 @@ public:
 
     void setup();
 
-    int loadInput(char* file, int n, char* outputDir);
+    int loadInput(char* file, uint32_t n, char* outputDir);
 
-    void allocOutputCube(int sideLength);
+    void allocOutputCube(uint32_t sideLength);
 
     void clearOutputCube();
 
