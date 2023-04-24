@@ -10,7 +10,7 @@
 using namespace std; 
 
 
-void printVoxel(uint32_t x, uint32_t y, uint32_t z, bool alive) {
+void printVoxel(uint64_t x, uint64_t y, uint64_t z, bool alive) {
     cout << x << ", " << y << ", " << z << ", alive: " << alive << endl;
 }
 

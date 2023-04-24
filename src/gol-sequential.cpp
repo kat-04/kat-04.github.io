@@ -24,7 +24,7 @@ int golSequential(int argc, char** argv, string outputDir)
     //TODO: timing code (output to log and/or print)
     string inputFile = argv[1];
     int numFrames = stoi(argv[2]);
-    uint32_t sideLength = stoi(argv[3]);
+    uint64_t sideLength = stoi(argv[3]);
     string outputPath =  outputDir + "/frame";
     string frameOutputFile; 
     const char* spaceDelim = " ";
@@ -33,10 +33,10 @@ int golSequential(int argc, char** argv, string outputDir)
     //init cube structure
     vector<vector<vector<bool>>> cube(sideLength);
     vector<vector<vector<bool>>> newCube(sideLength);
-    for (uint32_t i = 0; i < sideLength; i++) {
+    for (uint64_t i = 0; i < sideLength; i++) {
         cube[i] = vector<vector<bool>>(sideLength); 
         newCube[i] = vector<vector<bool>>(sideLength); 
-        for (uint32_t j = 0; j < sideLength; j++) {
+        for (uint64_t j = 0; j < sideLength; j++) {
             cube[i][j] = vector<bool>(sideLength);
             newCube[i][j] = vector<bool>(sideLength);
         }
@@ -92,16 +92,16 @@ int golSequential(int argc, char** argv, string outputDir)
         double frameTime = 0.0;
         Timer frameTimer;
         //Loop through all voxels
-        for (uint32_t x = 0; x < sideLength; x++) {
-            for (uint32_t y = 0; y < sideLength; y++) {
-                for (uint32_t z = 0; z < sideLength; z++) {
+        for (uint64_t x = 0; x < sideLength; x++) {
+            for (uint64_t y = 0; y < sideLength; y++) {
+                for (uint64_t z = 0; z < sideLength; z++) {
                     //get neighbor sum
                     frameTimer.reset();
                     numAlive = 0;
                     if (isMoore) {
-                        for (uint32_t i = x - 1; i <= x + 1; i++) {
-                            for (uint32_t j = y - 1; j <= y + 1; j++) {
-                                for (uint32_t k = z - 1; k <= z + 1; k++) {
+                        for (uint64_t i = x - 1; i <= x + 1; i++) {
+                            for (uint64_t j = y - 1; j <= y + 1; j++) {
+                                for (uint64_t k = z - 1; k <= z + 1; k++) {
                                     if (i < sideLength && j < sideLength && k < sideLength) {
                                         if (!(x == i && y == j && z == k)) { //don't include self
                                             numAlive += cube[i][j][k] ? 1 : 0;

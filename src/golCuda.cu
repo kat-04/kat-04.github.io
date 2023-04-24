@@ -21,7 +21,7 @@
 #define BLOCK_SIZE 256
 
 struct GlobalConstants {
-    uint32_t sideLength;
+    uint64_t sideLength;
     bool isMoore;
     int numStates;
     bool* ruleset;
@@ -32,18 +32,18 @@ struct GlobalConstants {
 __constant__ GlobalConstants cuConstIterationParams;
 
 __global__ void kernelDoIterationMoore() {
-    uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
-    uint32_t n = cuConstIterationParams.sideLength;
+    uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t n = cuConstIterationParams.sideLength;
     if (index >= (n * n * n + 7) / 8) {
         return;
     }
     /* printf("Thread idx: %d\n", index); */
     
     // index of the first thing in the bit array
-    uint32_t bitIndex = index * 8;
+    uint64_t bitIndex = index * 8;
     /* printf("Bit idx: %d\n", bitIndex); */
-    uint32_t neighborBitIndex;
-    uint32_t neighborLinIndex;
+    uint64_t neighborBitIndex;
+    uint64_t neighborLinIndex;
     int neighborBit;
     uint8_t mask = 1;
     int numAlive = 0;
@@ -51,13 +51,13 @@ __global__ void kernelDoIterationMoore() {
     // printf("doin index %d, x: %d, y: %d, z: %d\n", index, x, y, z);
     for (int bit = 0; bit < 8; bit++) {
         /* printf("Bit idx: %d\n", bitIndex + bit); */
-        uint32_t z = ((bitIndex + bit) / (n * n)) % n;
-        uint32_t y = ((bitIndex + bit) / n) % n;
-        uint32_t x = (bitIndex + bit) % n;
+        uint64_t z = ((bitIndex + bit) / (n * n)) % n;
+        uint64_t y = ((bitIndex + bit) / n) % n;
+        uint64_t x = (bitIndex + bit) % n;
         /* printf("x: %d, y: %d, z: %d\n", x, y, z); */
-        for (uint32_t i = (x == 0) ? 0 : x - 1; i <= x + 1; i++) {
-            for (uint32_t j = (y == 0) ? 0 : y - 1; j <= y + 1; j++) {
-                for (uint32_t k = (z == 0) ? 0 : z - 1; k <= z + 1; k++) {
+        for (uint64_t i = (x == 0) ? 0 : x - 1; i <= x + 1; i++) {
+            for (uint64_t j = (y == 0) ? 0 : y - 1; j <= y + 1; j++) {
+                for (uint64_t k = (z == 0) ? 0 : z - 1; k <= z + 1; k++) {
                     /* printf("Hello from index %d and bit %d\n", index, bit); */
                     if (i < n && j < n && k < n) {
                         if (!(x == i && y == j && z == k)) { //don't include self
@@ -97,24 +97,24 @@ __global__ void kernelDoIterationMoore() {
 }
 
 __global__ void kernelDoIterationVonNeumann() {
-    uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
-    uint32_t n = cuConstIterationParams.sideLength;
+    uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t n = cuConstIterationParams.sideLength;
     if (index >= (n * n * n + 7) / 8) {
         return;
     }
     
-    uint32_t bitIndex = index * 8;
-    uint32_t neighborBitIndex;
-    uint32_t neighborLinIndex;
+    uint64_t bitIndex = index * 8;
+    uint64_t neighborBitIndex;
+    uint64_t neighborLinIndex;
     int neighborBit;
     uint8_t mask = 1;
     int numAlive = 0;
     int status;
 
     for (int bit = 0; bit < 8; bit++) {
-        uint32_t z = ((bitIndex + bit) / (n * n)) % n;
-        uint32_t y = ((bitIndex + bit) / n) % n;
-        uint32_t x = (bitIndex + bit) % n;
+        uint64_t z = ((bitIndex + bit) / (n * n)) % n;
+        uint64_t y = ((bitIndex + bit) / n) % n;
+        uint64_t x = (bitIndex + bit) % n;
 
         neighborBitIndex = (z * n * n) + (y * n) + x - 1;
         neighborLinIndex = neighborBitIndex / 8;
@@ -207,9 +207,10 @@ GolCuda::clearOutputCube() {
 }
 
 void
-GolCuda::allocOutputCube(uint32_t sideLength) {
-    /* printf("%d\n", (sideLength * sideLength * sideLength + 7) / 8); */
-    printf("Size of data: %f MB\n", sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / (8.f * 1024.f * 1024.f)));
+GolCuda::allocOutputCube(uint64_t sideLength) {
+    /* printf("%lu\n", (sideLength * sideLength * sideLength + 7)); */
+    /* printf("Side length: %d\n", sideLength); */
+    printf("Size of data: %f MB\n", sizeof(uint8_t) * (((sideLength * sideLength * sideLength + 7) / 8) / (1024.f * 1024.f)));
     if (cube) delete cube;
     cube = new Cube(sideLength);
 }
@@ -231,7 +232,7 @@ GolCuda::getCube() {
 }
 
 int
-GolCuda::loadInput(char* file, uint32_t n, char* outputDir) {
+GolCuda::loadInput(char* file, uint64_t n, char* outputDir) {
     return loadCubeInput(file, sideLength, ruleset, numStates, isMoore, inputData, n, outputDir);
 }
 
@@ -276,7 +277,7 @@ GolCuda::setup() {
     //
     // See the CUDA Programmer's Guide for descriptions of
     // cudaMalloc and cudaMemcpy
-    uint32_t cubeSize = (sideLength * sideLength * sideLength + 7) / 8;
+    uint64_t cubeSize = (sideLength * sideLength * sideLength + 7) / 8;
 
     cudaMalloc(&cudaDeviceRuleset, sizeof(bool) * 54);
     cudaMalloc(&cudaDeviceInputData, sizeof(uint8_t) * cubeSize);
@@ -325,7 +326,7 @@ GolCuda::doIteration() {
     /*     printf("%d, ", ruleset[i]); */
     /* } */
     /* printf("\n, inputData: "); */
-    /* for (uint32_t i = 0; i < (sideLength * sideLength * sideLength + 7) / 8; i++) { */
+    /* for (uint64_t i = 0; i < (sideLength * sideLength * sideLength + 7) / 8; i++) { */
     /*     std::cout << i << ": " << std::bitset<8>(inputData[i]) << std::endl; */
     /* } */
 

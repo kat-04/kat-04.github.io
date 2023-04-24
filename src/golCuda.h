@@ -9,7 +9,7 @@ struct Cube;
 class GolCuda {
 
 private:
-    uint32_t sideLength;
+    uint64_t sideLength;
     bool isMoore;
     int numStates;
     
@@ -29,9 +29,9 @@ public:
 
     void setup();
 
-    int loadInput(char* file, uint32_t n, char* outputDir);
+    int loadInput(char* file, uint64_t n, char* outputDir);
 
-    void allocOutputCube(uint32_t sideLength);
+    void allocOutputCube(uint64_t sideLength);
 
     void clearOutputCube();
 
