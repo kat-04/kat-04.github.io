@@ -21,7 +21,7 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
     //parse args (argc has been checked in main)
     string inputFile = argv[1];
     int numFrames = stoi(argv[2]);
-    int sideLength = stoi(argv[3]);
+    uint64_t sideLength = stoi(argv[3]);
     string outputPath =  fileDir + "/frame";
 
     GolCuda* golCuda;
@@ -55,12 +55,14 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
        
         
         output << sideLength << std::endl;
-        for (int i = 0; i < sideLength * sideLength * sideLength; i++) {
-            int z = (i / (sideLength * sideLength)) % sideLength;
-            int y = (i / sideLength) % sideLength;
-            int x = i % sideLength;
+        for (uint64_t i = 0; i < sideLength * sideLength * sideLength; i++) {
+            uint64_t z = (i / (sideLength * sideLength)) % sideLength;
+            uint64_t y = (i / sideLength) % sideLength;
+            uint64_t x = i % sideLength;
             int bit = i % 8;
+            /* std::cout << "."; */
             if (((resultCube->data[i / 8]) >> (7 - bit)) & 1) {
+                /* std::cout << "Alive cell exists" << std::endl; */
                 output << x << " " << y << " " << z << endl;
             }
         }
