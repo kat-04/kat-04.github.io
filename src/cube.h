@@ -8,10 +8,18 @@ struct Cube {
     Cube(uint64_t n) {
         sideLength = n;
         data = new uint8_t[(sideLength * sideLength * sideLength + 7) / 8];
+        if (!data) {
+            std::cerr << "Cube data allocation failed" << std::endl;
+        }
+    }
+
+    ~Cube() {
+        if (data) {
+            delete [] data;
+        }
     }
 
     void clear() {
-
         uint64_t numVoxels = ((sideLength * sideLength * sideLength + 7) / 8);
         uint8_t* ptr = data;
         for (uint64_t i=0; i<numVoxels; i++) {

@@ -126,22 +126,22 @@ __global__ void kernelDoIterationVonNeumann() {
         neighborBit = neighborBitIndex % 8;
         if (x + 1 < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
 
-        neighborBitIndex = (z * n * n) + ((y-1) * n) + x;
+        neighborBitIndex = (z * n * n) + ((y - 1) * n) + x;
         neighborLinIndex = neighborBitIndex / 8;
         neighborBit = neighborBitIndex % 8;
         if (y > 0 && y < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
 
-        neighborBitIndex = (z * n * n) + ((y+1) * n) + x;
+        neighborBitIndex = (z * n * n) + ((y + 1) * n) + x;
         neighborLinIndex = neighborBitIndex / 8;
         neighborBit = neighborBitIndex % 8;
         if (y + 1 < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
 
-        neighborBitIndex = ((z-1) * n * n) + (y * n) + x;
+        neighborBitIndex = ((z - 1) * n * n) + (y * n) + x;
         neighborLinIndex = neighborBitIndex / 8;
         neighborBit = neighborBitIndex % 8;
         if (z > 0 && z < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
 
-        neighborBitIndex = ((z+1) * n * n) + (y * n) + x;
+        neighborBitIndex = ((z + 1) * n * n) + (y * n) + x;
         neighborLinIndex = neighborBitIndex / 8;
         neighborBit = neighborBitIndex % 8;
         if (z + 1 < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
@@ -213,6 +213,9 @@ GolCuda::allocOutputCube(uint64_t sideLength) {
     printf("Size of data: %f MB\n", sizeof(uint8_t) * (((sideLength * sideLength * sideLength + 7) / 8) / (1024.f * 1024.f)));
     if (cube) delete cube;
     cube = new Cube(sideLength);
+    if (!cube) {
+        std::cerr << "Cube allocation failed" << std::endl;
+    }
 }
  
 Cube*
@@ -223,10 +226,12 @@ GolCuda::getCube() {
 
     //printf("Copying image data from device\n");
 
-    cudaMemcpy(cube->data,
+    if (cudaMemcpy(cube->data,
                cudaDeviceOutputData,
                sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8),
-               cudaMemcpyDeviceToHost);
+               cudaMemcpyDeviceToHost) != cudaSuccess) {
+        std::cerr << "Cuda Memcpy in getCube failed" << std::endl;
+    }
     
     return cube;
 }
@@ -278,13 +283,20 @@ GolCuda::setup() {
     // See the CUDA Programmer's Guide for descriptions of
     // cudaMalloc and cudaMemcpy
     uint64_t cubeSize = (sideLength * sideLength * sideLength + 7) / 8;
+    std::cout << "Cube size: " << cubeSize << std::endl;
 
     cudaMalloc(&cudaDeviceRuleset, sizeof(bool) * 54);
     cudaMalloc(&cudaDeviceInputData, sizeof(uint8_t) * cubeSize);
     cudaMalloc(&cudaDeviceOutputData, sizeof(uint8_t) * cubeSize);
 
+    if (!cudaDeviceInputData || !cudaDeviceOutputData) {
+        std::cerr << "Cuda malloc failed" << std::endl;
+    }
+
     cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(bool) * 54, cudaMemcpyHostToDevice);
-    cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * cubeSize, cudaMemcpyHostToDevice);
+    if (cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * cubeSize, cudaMemcpyHostToDevice) != cudaSuccess) {
+        std::cerr << "Cuda Memcpy in getCube failed" << std::endl;
+    }
 
     // Initialize parameters in constant memory.  We didn't talk about
     // constant memory in class, but the use of read-only constant
@@ -308,24 +320,28 @@ GolCuda::setup() {
 
 void 
 GolCuda::advanceFrame() {
-    cudaMemcpy(inputData,
+    if (cudaMemcpy(inputData,
         cudaDeviceOutputData,
         sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8),
-        cudaMemcpyDeviceToHost);
+        cudaMemcpyDeviceToHost) != cudaSuccess) {
+        std::cerr << "Cuda Memcpy in getCube failed" << std::endl;
+    }
 
-    cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8), cudaMemcpyHostToDevice);
+    if (cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8), cudaMemcpyHostToDevice) != cudaSuccess) {
+        std::cerr << "Cuda Memcpy in getCube failed" << std::endl;
+    }
     //cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
 }
 
 void
 GolCuda::doIteration() {    
 
-    /* printf("sideLength: %d, numStates: %d, isMoore %d\n", sideLength, numStates, isMoore); */
-    /* printf("ruleset: "); */
+    /* printf("sideLength: %lu, numStates: %d, isMoore %d\n", sideLength, numStates, isMoore); */
+    /* printf("ruleset:\n"); */
     /* for (int i = 0; i < 54; i++) { */
     /*     printf("%d, ", ruleset[i]); */
     /* } */
-    /* printf("\n, inputData: "); */
+    /* printf("\ninputData:\n"); */
     /* for (uint64_t i = 0; i < (sideLength * sideLength * sideLength + 7) / 8; i++) { */
     /*     std::cout << i << ": " << std::bitset<8>(inputData[i]) << std::endl; */
     /* } */
