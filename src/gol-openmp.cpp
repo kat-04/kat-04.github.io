@@ -21,9 +21,9 @@
 
 using namespace std; 
 
-/* void printVoxel(int x, int y, int z, bool alive) { */
-/*     cout << x << ", " << y << ", " << z << ", alive: " << alive << endl; */
-/* } */
+void oprintVoxel(int x, int y, int z, bool alive) {
+    cout << x << ", " << y << ", " << z << ", alive: " << alive << endl;
+}
 
 /* vector<string> otokenizeLine(string &line, const char* delim) { */
 /*     vector<string> out; */

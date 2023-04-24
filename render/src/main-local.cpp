@@ -161,13 +161,12 @@ int main()
 
 
 
-
     // MAIN LOOP
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         //----------------------------------------------------------------------------------
         // UPDATE 
-
+        
         // Move camera around the scene
         if (IsKeyPressed(KEY_C)) free = !free;
         if (!free) {
@@ -180,6 +179,8 @@ int main()
         if (IsKeyPressed(KEY_Z)) {
             camera.position = Vector3Add(origin, starting_pos);
             camera.target = origin;
+            camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+            camera.fovy = 45.0f;
         }
 
         // Update shader and light accordingly to follow camera movement
@@ -194,6 +195,8 @@ int main()
 
         //----------------------------------------------------------------------------------
         // DRAW
+
+        if (first) lastFrameTime = GetTime();
 
         BeginDrawing();
 
@@ -236,6 +239,7 @@ int main()
 
             // If file does not exist, then decrement frame and leave at frame (done = true)
             if (!file.is_open()) {
+                /* std::cout << "frame " << frame << " does not exist" << std::endl; */
                 if (frame < 0) {
                     frame++;
                     updated = false;
@@ -247,6 +251,8 @@ int main()
                 oss.clear();
                 oss << "../output-files/frame" << frame << ".txt";
                 filename = oss.str();
+            } else {
+                /* std::cout << "currently reading frame " << frame << std::endl; */
             }
 
             if (updated) {
@@ -256,11 +262,14 @@ int main()
                 size = std::get<0>(info);
                 num_blocks = (std::get<1>(info)).size();
                 updated = false;
+                /* std::cout << "Number of blocks: " << num_blocks << std::endl; */
             }
 
             // Draw outline (bounding box)
             if (!first) {
-                /* DrawCubeWires(origin, size, size, size, RED); */
+                /* std::cout << "Origin: (" << origin.x << ", " << origin.y << ", " << origin.z << ")" << std::endl; */
+                /* std::cout << "Size: " << size << std::endl; */
+                DrawCubeWires(origin, size, size, size, RED);
                 // Draw mesh instances
                 DrawMeshInstanced(cube, matInstances, transforms, num_blocks);
             }
@@ -269,6 +278,7 @@ int main()
                 // sets camera position in accordance to the size of the cube during first frame
                 camera.position = (Vector3) { (float)size, size / 4.f, 2.f * size };
                 starting_pos = camera.position;
+                /* std::cout << "Camera Position: (" << starting_pos.x << ", " << starting_pos.y << ", " << starting_pos.z << ")" << std::endl; */
             }
 
             first = false;
