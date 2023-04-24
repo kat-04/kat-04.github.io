@@ -82,7 +82,7 @@ tuple<map<int, bool>, bool, int> parseRules(string line) {
 
 
 
-std::tuple<bool, int> parseRulesCuda(std::string line, bool *&ruleset) {
+tuple<bool, int> parseRulesCuda(string line, bool *&ruleset) {
     const char* slashDelim = "/";
     const char* commaDelim = ",";
     const char* dashDelim = "-";
