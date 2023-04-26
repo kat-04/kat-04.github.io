@@ -2,6 +2,7 @@
 #include <string>
 #include "gol-sequential.h"
 #include "gol-cuda.cpp"
+#include "gol-openmp.h"
 
 int main(int argc, char** argv)
 {
@@ -24,7 +25,7 @@ int main(int argc, char** argv)
             return gol_cuda(argc, argv, outputDir);
         }
         if (version == "omp") {
-            return 0;
+            return golOpenMP(argc, argv, outputDir);
         }
     }
     cerr << "Usage: " << argv[0] << " input_file number_of_frames side_length version:[seq(default)/cuda/omp]" << endl;

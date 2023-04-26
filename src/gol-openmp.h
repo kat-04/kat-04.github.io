@@ -41,6 +41,6 @@ struct Vec3 {
     }
 };
 
-int golOpenMP(int argc, char** argv);
+int golOpenMP(int argc, char** argv, std::string outputDir);
 
 #endif
