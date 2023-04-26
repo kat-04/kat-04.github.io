@@ -226,7 +226,10 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
             }
         }
         #pragma omp barrier
+        #pragma omp single
+        {
         std::memcpy(states, states_tmp, (n * n * n + 7) / 8);
+        }
     }
 }
 
