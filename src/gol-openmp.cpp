@@ -118,17 +118,16 @@ void toggle_state(Vec3 v, uint8_t *states) {
 }
 
 
-void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3> *newAlive, uint8_t *states, get_neighbors_t get_neighbors) {
+void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3> *newAlive, uint8_t *states, uint8_t *states_tmp, get_neighbors_t get_neighbors) {
 
     /* unordered_map<Vec3, bool, hashVec3> to_toggle; */
-    vector<Vec3> to_toggle;
-    int num_threads, chunk;
+    /* int num_threads, chunk; */
 
     #pragma omp parallel
     {
-        num_threads = omp_get_num_threads();
+        /* num_threads = omp_get_num_threads(); */
         /* cout << "Num threads: " << num_threads << endl; */
-        chunk = ((*curAlive).size() + num_threads - 1) / num_threads;
+        /* chunk = ((*curAlive).size() + num_threads - 1) / num_threads; */
 
         // Neighbor alive count
         uint8_t num_alive = 0;
@@ -138,7 +137,7 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
         vector<Vec3> n_neighbors;
 
         /* #pragma omp parallel for shared(to_toggle, curAlive, newAlive, chunk) private(neighbors, n_neighbors, num_alive) schedule(static, chunk) */
-        #pragma omp for nowait schedule(guided)
+        #pragma omp for nowait schedule(guided) private(neighbors, n_neighbors, num_alive)
         for (auto voxel : *curAlive) {
             /* cout << "Hellooo" << endl; */
 
@@ -167,19 +166,16 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
                 }
             }
             // Check survival rule
+            #pragma omp critical
+            {
             if ((*rules)[27 + num_alive]) {
                 // If it survives
                 /* cout << voxel << " survives!" << endl; */
-                #pragma omp critical
-                {
                 (*newAlive).push_back(voxel);
-                }
             } else {
                 /* to_toggle.insert( {voxel, true} ); */
-                #pragma omp critical
-                {
-                to_toggle.push_back(voxel);
-                }
+                toggle_state(voxel, states_tmp);
+            }
             }
 
             // -----------------------------------------------------------------
@@ -194,7 +190,8 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
                 if (is_alive(neighbor, states)) continue;
 
                 // If neighbor has already been updated, do not update again
-                if (find(to_toggle.begin(), to_toggle.end(), neighbor) != to_toggle.end()) continue;
+                /* if (find(to_toggle.begin(), to_toggle.end(), neighbor) != to_toggle.end()) continue; */
+                if (is_alive(neighbor, states_tmp)) continue;
                 
                 /* try { */
                 /*     to_toggle.at(neighbor); */
@@ -216,22 +213,25 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
 
                 // Check birth rule
                 if ((*rules)[num_alive]) {
-                    (*newAlive).push_back(neighbor);
-                    /* cout << neighbor << " is born!" << endl; */
-                    /* to_toggle.insert( {neighbor, true} ); */
-                    to_toggle.push_back(neighbor);
+                    #pragma omp critical
+                    {
+                    if (!is_alive(neighbor, states_tmp)) {
+                        (*newAlive).push_back(neighbor);
+                        /* cout << neighbor << " is born!" << endl; */
+                        /* to_toggle.insert( {neighbor, true} ); */
+                        toggle_state(neighbor, states_tmp);
+                    }
+                    }
                 }
             }
         }
-        #pragma omp for schedule(static, chunk)
-        for (auto v : to_toggle) {
-            toggle_state(v, states);
-        }
+        #pragma omp barrier
+        std::memcpy(states, states_tmp, (n * n * n + 7) / 8);
     }
 }
 
 
-void parse_input(string inputFile, uint64_t sideLength, map<int, bool> *rules, bool *isMoore, int *numStates, vector<Vec3> *voxels, uint8_t *states)
+void parse_input(string inputFile, uint64_t sideLength, map<int, bool> *rules, bool *isMoore, int *numStates, vector<Vec3> *voxels, uint8_t *states, uint8_t *states_tmp)
 {
     // Open input file
     fstream input;
@@ -280,6 +280,7 @@ void parse_input(string inputFile, uint64_t sideLength, map<int, bool> *rules, b
             /* uint8_t mask = 1 << (7 - bit); */
             /* states[stateIndex] |= mask; */
             toggle_state(Vec3(x, y, z), states);
+            toggle_state(Vec3(x, y, z), states_tmp);
 
             // Write it to output file
             outputInit << coords[0] << " " << coords[1] << " " << coords[2] << endl;
@@ -316,16 +317,22 @@ int golOpenMP(int argc, char** argv) {
     map<int, bool> rules;
     vector<Vec3> voxels, newVoxels;
     uint8_t *states;
+    uint8_t *states_tmp;
     states = (uint8_t *)calloc(sizeof(uint8_t), ((sideLength * sideLength * sideLength + 7) / 8));
+    states_tmp = (uint8_t *)calloc(sizeof(uint8_t), ((sideLength * sideLength * sideLength + 7) / 8));
     /* fill_n(states, (sideLength * sideLength * sideLength + 7) / 8, 0); */
     if (!states) {
         cerr << "Malloc states failed" << endl;
         return 1;
     }
+    if (!states_tmp) {
+        cerr << "Malloc states_tmp failed" << endl;
+        return 1;
+    }
 
     bool isMoore;
     int numStates;
-    parse_input(inputFile, sideLength, &rules, &isMoore, &numStates, &voxels, states);
+    parse_input(inputFile, sideLength, &rules, &isMoore, &numStates, &voxels, states, states_tmp);
 
     string outputPath = "./output-files/frame";
     string frameOutputFile;
@@ -337,7 +344,6 @@ int golOpenMP(int argc, char** argv) {
     /* cout << "isMoore: " << isMoore << endl; */
     /* cout << "numStates: " << numStates << endl; */
     /* cout << "numVoxels: " << voxels.size() << endl; */
-    #pragma omp barrier
 
     for (int f = 0; f < numFrames; f++) {
         frameOutputFile = outputPath + to_string(f + 1) + ".txt";
@@ -351,9 +357,9 @@ int golOpenMP(int argc, char** argv) {
 
         /* cout << "Hellooooo!" << endl; */
         if (isMoore) {
-            increment_frame(&rules, &voxels, &newVoxels, states, &get_moore_neighbors);
+            increment_frame(&rules, &voxels, &newVoxels, states, states_tmp, &get_moore_neighbors);
         } else {
-            increment_frame(&rules, &voxels, &newVoxels, states, &get_vn_neighbors);
+            increment_frame(&rules, &voxels, &newVoxels, states, states_tmp, &get_vn_neighbors);
         }
 
         /* for (int i = 0; i < sizeof(states) / sizeof(uint8_t); i++) { */
@@ -366,14 +372,14 @@ int golOpenMP(int argc, char** argv) {
         /*     cout << newVoxels[i] << endl; */
         /* } */
 
+        #pragma omp barrier
         frameTime = frameTimer.elapsed();
         totalSimulationTime += frameTime;
-        printf("frame %d time: %.6fs\n", f + 1, frameTime);
+        /* printf("frame %d time: %.6fs\n", f + 1, frameTime); */
         // Write to output
         write_output(frameOutputFile, sideLength, &newVoxels, states);
         newVoxels.swap(voxels);
         newVoxels.clear();
-        #pragma omp barrier
     }
     printf("total simulation time: %.6fs\n", totalSimulationTime);
 
