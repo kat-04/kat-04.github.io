@@ -20,6 +20,24 @@
 
 #define BLOCK_SIZE 256
 
+// Uncomment for faster runtimes
+#define DEBUG
+
+#ifdef DEBUG
+#define cudaCheckError(ans) cudaAssert((ans), __FILE__, __LINE__);
+inline void cudaAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+    if (code != cudaSuccess)
+    {
+        fprintf(stderr, "CUDA Error: %s at %s:%d\n",
+        cudaGetErrorString(code), file, line);
+        if (abort) exit(code);
+    }
+}
+#else
+#define cudaCheckError(ans) ans
+#endif
+
 struct GlobalConstants {
     uint64_t sideLength;
     bool isMoore;
@@ -195,9 +213,9 @@ GolCuda::~GolCuda() {
         delete [] inputData;
     }
     if (cudaDeviceInputData) {
-        cudaFree(cudaDeviceRuleset);
-        cudaFree(cudaDeviceInputData);
-        cudaFree(cudaDeviceOutputData);
+        cudaCheckError(cudaFree(cudaDeviceRuleset));
+        cudaCheckError(cudaFree(cudaDeviceInputData));
+        cudaCheckError(cudaFree(cudaDeviceOutputData));
     }
 }
 
@@ -226,12 +244,10 @@ GolCuda::getCube() {
 
     //printf("Copying image data from device\n");
 
-    if (cudaMemcpy(cube->data,
+    cudaCheckError(cudaMemcpy(cube->data,
                cudaDeviceOutputData,
                sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8),
-               cudaMemcpyDeviceToHost) != cudaSuccess) {
-        std::cerr << "Cuda Memcpy in getCube failed" << std::endl;
-    }
+               cudaMemcpyDeviceToHost));
     
     return cube;
 }
@@ -285,18 +301,16 @@ GolCuda::setup() {
     uint64_t cubeSize = (sideLength * sideLength * sideLength + 7) / 8;
     std::cout << "Cube size: " << cubeSize << std::endl;
 
-    cudaMalloc(&cudaDeviceRuleset, sizeof(bool) * 54);
-    cudaMalloc(&cudaDeviceInputData, sizeof(uint8_t) * cubeSize);
-    cudaMalloc(&cudaDeviceOutputData, sizeof(uint8_t) * cubeSize);
+    cudaCheckError(cudaMalloc(&cudaDeviceRuleset, sizeof(bool) * 54));
+    cudaCheckError(cudaMalloc(&cudaDeviceInputData, sizeof(uint8_t) * cubeSize));
+    cudaCheckError(cudaMalloc(&cudaDeviceOutputData, sizeof(uint8_t) * cubeSize));
 
-    if (!cudaDeviceInputData || !cudaDeviceOutputData) {
-        std::cerr << "Cuda malloc failed" << std::endl;
-    }
+    /* if (!cudaDeviceInputData || !cudaDeviceOutputData) { */
+    /*     std::cerr << "Cuda malloc failed" << std::endl; */
+    /* } */
 
-    cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(bool) * 54, cudaMemcpyHostToDevice);
-    if (cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * cubeSize, cudaMemcpyHostToDevice) != cudaSuccess) {
-        std::cerr << "Cuda Memcpy in getCube failed" << std::endl;
-    }
+    cudaCheckError(cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(bool) * 54, cudaMemcpyHostToDevice));
+    cudaCheckError(cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * cubeSize, cudaMemcpyHostToDevice));
 
     // Initialize parameters in constant memory.  We didn't talk about
     // constant memory in class, but the use of read-only constant
@@ -314,22 +328,18 @@ GolCuda::setup() {
     params.outputData = cudaDeviceOutputData;
     params.ruleset = cudaDeviceRuleset;
     
-    cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
+    cudaCheckError(cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants)));
 }
 
 
 void 
 GolCuda::advanceFrame() {
-    if (cudaMemcpy(inputData,
+    cudaCheckError(cudaMemcpy(inputData,
         cudaDeviceOutputData,
         sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8),
-        cudaMemcpyDeviceToHost) != cudaSuccess) {
-        std::cerr << "Cuda Memcpy in getCube failed" << std::endl;
-    }
+        cudaMemcpyDeviceToHost)); 
 
-    if (cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8), cudaMemcpyHostToDevice) != cudaSuccess) {
-        std::cerr << "Cuda Memcpy in getCube failed" << std::endl;
-    }
+    cudaCheckError(cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8), cudaMemcpyHostToDevice));
     //cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
 }
 
