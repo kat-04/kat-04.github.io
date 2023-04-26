@@ -40,6 +40,8 @@ std::tuple<int, std::vector<Matrix> > parse_data(std::string path_to_frame) {
     std::getline(frame, line);
     size = std::stoi(line);
 
+    /* std::cout << "Size: " << size << std::endl; */
+
     // How much to translate each vertex by
     // Centers entire structure at (0, 0, 0)
     Matrix shift = MatrixTranslate(-size / 2.f + 0.5f, -size / 2.f + 0.5f, -size / 2.f + 0.5f);

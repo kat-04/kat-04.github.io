@@ -58,7 +58,7 @@ int main()
 
     // Set logging method and configuration
     SetTraceLogCallback(log);
-    /* SetConfigFlags(FLAG_MSAA_4X_HINT); // if available */
+    SetConfigFlags(FLAG_MSAA_4X_HINT); // if available
     InitWindow(screenWidth, screenHeight, "3D Conway's Game of Life");
 
     // Initialize the camera
@@ -259,6 +259,7 @@ int main()
                 // Get transforms and other data from the file
                 info = parse_data(filename);
                 transforms = &(std::get<1>(info))[0];
+                /* std::cout << "Transforms: " << transforms[0].m5 << std::endl; */
                 size = std::get<0>(info);
                 num_blocks = (std::get<1>(info)).size();
                 updated = false;
@@ -276,9 +277,9 @@ int main()
 
             if (first) {
                 // sets camera position in accordance to the size of the cube during first frame
-                camera.position = (Vector3) { (float)size, size / 4.f, 2.f * size };
+                camera.position = (Vector3) { 0, size / 4.f, 2.f * size };
                 starting_pos = camera.position;
-                /* std::cout << "Camera Position: (" << starting_pos.x << ", " << starting_pos.y << ", " << starting_pos.z << ")" << std::endl; */
+                std::cout << "Camera Position: (" << starting_pos.x << ", " << starting_pos.y << ", " << starting_pos.z << ")" << std::endl;
             }
 
             first = false;

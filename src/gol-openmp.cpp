@@ -5,10 +5,13 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <unordered_map>
+#include <algorithm>
 #include <cstring>
 #include <vector>
 #include <tuple>
 #include <fstream>
+#include <bitset>
 #include <omp.h>
 #include <iostream> //for cout
 #include "timing.h"
@@ -19,196 +22,361 @@
 //MAP FORMAT: keys 0-26 -> birth for that num neighbors,
 //            keys 27-54 -> survival for that num neighbors
 
+// IDEA:
+// have a map of voxels and state
+// start with only alive ones and add in increment_
+// set states to alive/dead by iterating through like a wavefront -- make the for loop inside parallel but for loop must be sequential O(n)
+// NEW THOUGHT: instead of wavefront, can just check all neighbors for each alive cell -- map deals with duplicates and overwriting
+// Have each thread read from map and append alive voxels to their own private vectors and atomically write to output
+// each thread can query map based on (x, y, z) so assign blocks per thread
+
 using namespace std; 
 
-void oprintVoxel(int x, int y, int z, bool alive) {
-    cout << x << ", " << y << ", " << z << ", alive: " << alive << endl;
-}
+uint64_t n = 0;
 
-/* vector<string> otokenizeLine(string &line, const char* delim) { */
-/*     vector<string> out; */
-/*     char *token = std::strtok(const_cast<char*>(line.c_str()), delim); */ 
-/*     while (token != nullptr) */ 
-/*     { */ 
-/*         out.push_back(string(token)); */ 
-/*         token = strtok(nullptr, delim); */ 
-/*     } */ 
-/*     return out; */
-/* } */
-
-/* tuple<map<int, bool>, bool, int> oparseRules(string line) { */
-/*     const char* slashDelim = "/"; */
-/*     const char* commaDelim = ","; */
-/*     const char* dashDelim = "-"; */
-/*     map<int, bool> ruleMap; */
-
-/*     vector<string> rules = otokenizeLine(line, slashDelim); */
-/*     string survival = rules[0]; */
-/*     string birth = rules[1]; */
-/*     int numStates = stoi(rules[2]); */
-/*     bool isMoore = (rules[3] == "M"); */
-
-/*     //init map */
-/*     for (int i = 0; i < 54; i++) { */
-/*         ruleMap[i] = false; */
-/*     } */
-
-/*     //parse survival and birth rules */
-/*     vector<string> survivalSubsets = otokenizeLine(survival, commaDelim); */
-/*     vector<string> birthSubsets = otokenizeLine(birth, commaDelim); */
-/*     for (int i = 0; i < (int)birthSubsets.size(); i++) { */
-/*         if (birthSubsets[i].find('-') == string::npos) { */    
-/*             ruleMap[stoi(birthSubsets[i])] = true; */
-/*         } else { */
-/*             vector<string> range = otokenizeLine(birthSubsets[i], dashDelim); */
-/*             for (int j = stoi(range[0]); j <= stoi(range[1]); j++) { */
-/*                 ruleMap[j] = true; */
-/*             } */
-/*         } */
-/*     } */
-
-/*     for (int i = 0; i < (int)survivalSubsets.size(); i++) { */
-/*         if (survivalSubsets[i].find('-') == string::npos) { */    
-/*             ruleMap[27 + stoi(survivalSubsets[i])] = true; */
-/*         } else { */
-/*             vector<string> range = otokenizeLine(survivalSubsets[i], dashDelim); */
-/*             for (int j = 27 + stoi(range[0]); j <= 27 + stoi(range[1]); j++) { */
-/*                 ruleMap[j] = true; */
-/*             } */
-/*         } */
-/*     } */  
-
-/*     return make_tuple(ruleMap, isMoore, numStates); */
-/* } */
-
-
-int golParallel(int argc, char** argv)
-{
-    //TODO: timing code (output to log and/or print)
-
-    //parse args
-    if (argc != 4) {
-        cerr << "Usage: " << argv[0] << " input_file number_of_frames side_length" << endl;
-        return 1;
+class hashVec3 {
+public:
+    size_t operator()(const Vec3& v) const
+    {
+        /* std::cout << "n: " << n << std::endl; */
+        return v.x + v.y * n + v.z * n * n;
     }
+};
 
-    string inputFile = argv[1];
-    int numFrames = stoi(argv[2]);
-    int sideLength = stoi(argv[3]);
-    string outputPath = "./output-files/frame";
-    string frameOutputFile; 
-    const char* spaceDelim = " ";
-    
+typedef void (*get_neighbors_t) (Vec3, vector<Vec3>*);
 
-    //init cube structure
-    vector<vector<vector<bool>>> cube(sideLength);
-    vector<vector<vector<bool>>> newCube(sideLength);
-    for (int i = 0; i < sideLength; i++) {
-        cube[i] = vector<vector<bool>>(sideLength); 
-        newCube[i] = vector<vector<bool>>(sideLength); 
-        for (int j = 0; j < sideLength; j++) {
-            cube[i][j] = vector<bool>(sideLength);
-            newCube[i][j] = vector<bool>(sideLength);
+void get_moore_neighbors(Vec3 v, vector<Vec3> *neighbors) {
+    for (uint32_t x_n = (v.x == 0) ? 0 : v.x - 1; x_n < v.x + 2; x_n++) {
+        for (uint32_t y_n = (v.y == 0) ? 0 : v.y - 1; y_n < v.y + 2; y_n++) {
+            for (uint32_t z_n = (v.z == 0) ? 0 : v.z - 1; z_n < v.z + 2; z_n++) {
+                // If neighbor out of bounds of cube size
+                if (x_n >= n || y_n >= n || z_n >= n) {
+                    continue;
+                }
+                // Don't include itself
+                if (x_n == v.x && y_n == v.y && z_n == v.z) {
+                    continue;
+                }
+                (*neighbors).push_back(Vec3(x_n, y_n, z_n));
+            }
         }
     }
+}
 
-    //parse input file
+void get_vn_neighbors(Vec3 v, vector<Vec3> *neighbors) {
+    for (uint32_t x_n = (v.x == 0) ? 0 : v.x - 1; x_n < v.x + 2; x_n++) {
+        for (uint32_t y_n = (v.y == 0) ? 0 : v.y - 1; y_n < v.y + 2; y_n++) {
+            for (uint32_t z_n = (v.z == 0) ? 0 : v.z - 1; z_n < v.z + 2; z_n++) {
+                // If neighbor out of bounds of cube size
+                if (x_n >= n || y_n >= n || z_n >= n) {
+                    continue;
+                }
+                // Don't include itself
+                if (x_n == v.x && y_n == v.y && z_n == v.z) {
+                    continue;
+                }
+                if (((v.x + v.y + v.z) % 2) != ((x_n + y_n + z_n) % 2)) continue;
+                (*neighbors).push_back(Vec3(x_n, y_n, z_n));
+            }
+        }
+    }
+}
+
+
+bool is_alive(Vec3 v, uint8_t *states) {
+    // Index in terms of bits (as if the bits were a whole array) 
+    uint64_t bit_index;
+    // Bit and index in array of neighbor
+    uint64_t index;
+    uint8_t bit;
+
+    bit_index = v.x + v.y * n + v.z * n * n;
+    index = bit_index / 8;
+    bit = bit_index % 8;
+
+    uint8_t mask = 1;
+    uint8_t alive = (states[index] >> (7 - bit)) & mask;
+
+    return (alive == 1);
+}
+
+
+// Update an alive cell as dead or dead as alive
+void toggle_state(Vec3 v, uint8_t *states) {
+    // Index in terms of bits (as if the bits were a whole array) 
+    uint64_t bit_index;
+    // Bit and index in array of neighbor
+    uint64_t index;
+    uint8_t bit;
+
+    bit_index = v.x + v.y * n + v.z * n * n;
+    index = bit_index / 8;
+    bit = bit_index % 8;
+
+    uint8_t mask = 1 << (7 - bit);
+    states[index] ^= mask;
+}
+
+
+void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3> *newAlive, uint8_t *states, get_neighbors_t get_neighbors) {
+
+    /* unordered_map<Vec3, bool, hashVec3> to_toggle; */
+    vector<Vec3> to_toggle;
+    int num_threads, chunk;
+
+    #pragma omp parallel
+    {
+        num_threads = omp_get_num_threads();
+        /* cout << "Num threads: " << num_threads << endl; */
+        chunk = ((*curAlive).size() + num_threads - 1) / num_threads;
+
+        // Neighbor alive count
+        uint8_t num_alive = 0;
+
+        // Iterate through all the alive voxels
+        vector<Vec3> neighbors;
+        vector<Vec3> n_neighbors;
+
+        /* #pragma omp parallel for shared(to_toggle, curAlive, newAlive, chunk) private(neighbors, n_neighbors, num_alive) schedule(static, chunk) */
+        #pragma omp for nowait schedule(guided)
+        for (auto voxel : *curAlive) {
+            /* cout << "Hellooo" << endl; */
+
+            num_alive = 0;
+
+            // If current voxel is dead, we want to skip over it
+            // We don't want to search cells that are not neighbors of alive cells
+            if (!is_alive(voxel, states)) {
+                continue;
+            }
+
+            // -----------------------------------------------------------------
+            // From here, we are working with alive cells and their neighbors
+            // -----------------------------------------------------------------
+            
+            // Check current voxel
+            neighbors.clear();
+            get_neighbors(voxel, &neighbors);
+            
+            /* cout << "Voxel: " << voxel << endl; */
+            /* cout << "Neighbors: " << endl; */
+            for (auto neighbor : neighbors) {
+                if (is_alive(neighbor, states)) {
+                    /* cout << neighbor << endl; */
+                    num_alive++;
+                }
+            }
+            // Check survival rule
+            if ((*rules)[27 + num_alive]) {
+                // If it survives
+                /* cout << voxel << " survives!" << endl; */
+                #pragma omp critical
+                {
+                (*newAlive).push_back(voxel);
+                }
+            } else {
+                /* to_toggle.insert( {voxel, true} ); */
+                #pragma omp critical
+                {
+                to_toggle.push_back(voxel);
+                }
+            }
+
+            // -----------------------------------------------------------------
+            // From here, we are working with dead neighbors
+            // -----------------------------------------------------------------
+
+            // Check neighbors of voxel if they are not yet in newAlive
+            /* #pragma omp for */
+            for (auto neighbor : neighbors) {
+                // If neighbor is alive, skip because we do not want to work
+                // with alive neighbors as they will be covered in a later for loop
+                if (is_alive(neighbor, states)) continue;
+
+                // If neighbor has already been updated, do not update again
+                if (find(to_toggle.begin(), to_toggle.end(), neighbor) != to_toggle.end()) continue;
+                
+                /* try { */
+                /*     to_toggle.at(neighbor); */
+                /*     continue; */
+                /* } */
+                /* catch(const out_of_range &e) { */
+                /* } */
+
+                num_alive = 0;
+                n_neighbors.clear();
+
+                // Iterate through dead neighbors' neighbors
+                get_neighbors(neighbor, &n_neighbors);
+                for (auto n_neighbor : n_neighbors) {
+                    if (is_alive(n_neighbor, states)) {
+                        num_alive++;
+                    }
+                }
+
+                // Check birth rule
+                if ((*rules)[num_alive]) {
+                    (*newAlive).push_back(neighbor);
+                    /* cout << neighbor << " is born!" << endl; */
+                    /* to_toggle.insert( {neighbor, true} ); */
+                    to_toggle.push_back(neighbor);
+                }
+            }
+        }
+        #pragma omp for schedule(static, chunk)
+        for (auto v : to_toggle) {
+            toggle_state(v, states);
+        }
+    }
+}
+
+
+void parse_input(string inputFile, uint64_t sideLength, map<int, bool> *rules, bool *isMoore, int *numStates, vector<Vec3> *voxels, uint8_t *states)
+{
+    // Open input file
     fstream input;
     input.open(inputFile, ios::in);
     if (!input.is_open()) {
         cerr << "could not open input file: " << inputFile << endl;
-        return 1;
     }
+
+    // Initialize variables for parsing
     string line;
     int curLine = 0;
     vector<string> coords;
 
-    //write frame0 to be same status as input (updates start at frame1)
-    frameOutputFile = outputPath + "0.txt";
+    // Initialize frame 0 output path
+    string outputPath = "./output-files/frame";
+    string frameOutputFile = outputPath + "0.txt";
+    const char* spaceDelim = " ";
     ofstream outputInit; 
     outputInit.open(frameOutputFile);
-    map<int, bool> ruleMap;
-    int numStates;
-    bool isMoore = false;
+
+    // Read lines of input file
     while (getline(input, line)) {
         if (curLine == 0) {
-            tie(ruleMap, isMoore, numStates) = parseRules(line);
-            
+            // Read in initial rule set and store it in variables
+            tie((*rules), (*isMoore), (*numStates)) = parseRules(line);
             outputInit << sideLength << endl;
         } else {
-            //set voxel to on
+            // Get voxel coordinates
             coords = tokenizeLine(line, spaceDelim);
-            //TODO: should probably check for out of bounds input here and error
-            cube[stoi(coords[0])][stoi(coords[1])][stoi(coords[2])] = true;
+            uint32_t x = stoi(coords[0]);
+            uint32_t y = stoi(coords[1]);
+            uint32_t z = stoi(coords[2]);
+
+            // Check if and input voxel coordinates are out of side bounds
+            if (x >= sideLength || y >= sideLength || z >= sideLength) {
+                cerr << "Input coordinates out of bounds" << std::endl;
+            }
+
+            // Add voxel to map with "alive" state
+            (*voxels).push_back(Vec3(x, y, z));
+
+            // Toggle state to 1
+            /* uint64_t linearIndex = x + y * n + z * n * n; */
+            /* uint8_t stateIndex = linearIndex / 8; */
+            /* uint8_t bit = linearIndex % 8; */
+            /* uint8_t mask = 1 << (7 - bit); */
+            /* states[stateIndex] |= mask; */
+            toggle_state(Vec3(x, y, z), states);
+
+            // Write it to output file
             outputInit << coords[0] << " " << coords[1] << " " << coords[2] << endl;
         }
         curLine++;
     }
     input.close();
     outputInit.close();
-
-    int numAlive; 
-    bool voxelStatus;
-
-    double totalSimulationTime = 0.0;
-
-    //for each frame
-    #pragma omp parallel for
-    for (int f = 0; f < numFrames; f++) {
-        frameOutputFile = outputPath + to_string(f+1) + ".txt";
-        ofstream output; 
-        output.open(frameOutputFile);
-        output << sideLength << endl;
-        //timer start
-        double frameTime = 0.0;
-        Timer frameTimer;
-        //Loop through all voxels
-        for (int x = 0; x < sideLength; x++) {
-            for (int y = 0; y < sideLength; y++) {
-                for (int z = 0; z < sideLength; z++) {
-                    //get neighbor sum
-                    frameTimer.reset();
-                    numAlive = 0;
-                    if (isMoore) {
-                        for (int i = x - 1; i <= x + 1; i++) {
-                            for (int j = y - 1; j <= y + 1; j++) {
-                                for (int k = z - 1; k <= z + 1; k++) {
-                                    if (i >= 0 && j >= 0 && k >= 0 && i < sideLength && j < sideLength && k < sideLength) {
-                                        if (!(x == i && y == j && z == k)) { //don't include self
-                                            numAlive += cube[i][j][k] ? 1 : 0;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        //von neumann neighborhood
-                        numAlive += (x - 1 >= 0 && cube[x-1][y][z]) ? 1 : 0;
-                        numAlive += (x + 1 < sideLength && cube[x+1][y][z]) ? 1 : 0;
-                        numAlive += (y - 1 >= 0 && cube[x][y-1][z]) ? 1 : 0;
-                        numAlive += (y + 1 < sideLength && cube[x][y+1][z]) ? 1 : 0;
-                        numAlive += (z - 1 >= 0 && cube[x][y][z-1]) ? 1 : 0;
-                        numAlive += (z + 1 < sideLength && cube[x][y][z+1]) ? 1 : 0;
-                    }
-
-                    //update voxel based on rules
-                    voxelStatus = ruleMap[(cube[x][y][z] ? 27 : 0) + numAlive];
-                    newCube[x][y][z] = voxelStatus;  
-                    //output for frame if on
-                    frameTime += frameTimer.elapsed();
-                    if (voxelStatus) {
-                        output << x << " " << y << " " << z << endl;
-                    }
-                    
-                    //printVoxel(x, y, z, cube[x][y][z]);              
-                }
-            }
-        }
-        cube.swap(newCube);
-        totalSimulationTime += frameTime;
-        output.close();
-    }
-    printf("total simulation time: %.6fs\n", totalSimulationTime);
-    return 0;
 }
 
+
+void write_output(string frameOutputFile, uint64_t sideLength, vector<Vec3> *voxels, uint8_t *states) {
+    // Read and write to output file
+    ofstream output;
+    output.open(frameOutputFile);
+    output << sideLength << endl;
+    for (auto v : *voxels) {
+        // If voxel is alive
+        if (is_alive(v, states)) {
+            output << v.x << " " << v.y << " " << v.z << endl;
+        }
+    }
+    output.close();
+}
+
+
+int golOpenMP(int argc, char** argv) {
+    string inputFile = argv[1];
+    int numFrames = stoi(argv[2]);
+    uint64_t sideLength = stoi(argv[3]);
+
+    n = sideLength;
+
+    map<int, bool> rules;
+    vector<Vec3> voxels, newVoxels;
+    uint8_t *states;
+    states = (uint8_t *)calloc(sizeof(uint8_t), ((sideLength * sideLength * sideLength + 7) / 8));
+    /* fill_n(states, (sideLength * sideLength * sideLength + 7) / 8, 0); */
+    if (!states) {
+        cerr << "Malloc states failed" << endl;
+        return 1;
+    }
+
+    bool isMoore;
+    int numStates;
+    parse_input(inputFile, sideLength, &rules, &isMoore, &numStates, &voxels, states);
+
+    string outputPath = "./output-files/frame";
+    string frameOutputFile;
+
+    double frameTime = 0.0;
+    double totalSimulationTime = 0.0;
+    Timer frameTimer;
+
+    /* cout << "isMoore: " << isMoore << endl; */
+    /* cout << "numStates: " << numStates << endl; */
+    /* cout << "numVoxels: " << voxels.size() << endl; */
+    #pragma omp barrier
+
+    for (int f = 0; f < numFrames; f++) {
+        frameOutputFile = outputPath + to_string(f + 1) + ".txt";
+        frameTimer.reset();
+        // Calculate next frame
+        
+        /* cout << "voxels frame " << f << std::endl; */
+        /* for (int i = 0; i < voxels.size(); i++) { */
+        /*     cout << voxels[i] << " alive? " << is_alive(voxels[i], states) << endl; */
+        /* } */
+
+        /* cout << "Hellooooo!" << endl; */
+        if (isMoore) {
+            increment_frame(&rules, &voxels, &newVoxels, states, &get_moore_neighbors);
+        } else {
+            increment_frame(&rules, &voxels, &newVoxels, states, &get_vn_neighbors);
+        }
+
+        /* for (int i = 0; i < sizeof(states) / sizeof(uint8_t); i++) { */
+        /*     cout << bitset<8>(states[i]) << "_"; */
+        /* } */
+        /* cout << endl; */
+
+        /* cout << "newVoxels frame " << f + 1 << std::endl; */
+        /* for (int i = 0; i < newVoxels.size(); i++) { */
+        /*     cout << newVoxels[i] << endl; */
+        /* } */
+
+        frameTime = frameTimer.elapsed();
+        totalSimulationTime += frameTime;
+        printf("frame %d time: %.6fs\n", f + 1, frameTime);
+        // Write to output
+        write_output(frameOutputFile, sideLength, &newVoxels, states);
+        newVoxels.swap(voxels);
+        newVoxels.clear();
+        #pragma omp barrier
+    }
+    printf("total simulation time: %.6fs\n", totalSimulationTime);
+
+    free(states);
+    return 0;
+}

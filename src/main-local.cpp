@@ -25,7 +25,7 @@ int main(int argc, char** argv)
         /*     return gol_cuda(argc, argv, outputDir); */
         /* } */
         if (version == "omp") {
-            return golParallel(argc, argv);
+            return golOpenMP(argc, argv);
         }
     }
     cerr << "Usage: " << argv[0] << " input_file number_of_frames side_length version:[seq(default)/cuda/omp]" << endl;
