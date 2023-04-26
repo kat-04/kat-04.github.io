@@ -234,7 +234,7 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
 }
 
 
-void parse_input(string inputFile, uint64_t sideLength, map<int, bool> *rules, bool *isMoore, int *numStates, vector<Vec3> *voxels, uint8_t *states, uint8_t *states_tmp)
+void parse_input(string outputDir, string inputFile, uint64_t sideLength, map<int, bool> *rules, bool *isMoore, int *numStates, vector<Vec3> *voxels, uint8_t *states, uint8_t *states_tmp)
 {
     // Open input file
     fstream input;
@@ -249,7 +249,7 @@ void parse_input(string inputFile, uint64_t sideLength, map<int, bool> *rules, b
     vector<string> coords;
 
     // Initialize frame 0 output path
-    string outputPath = "./output-files/frame";
+    string outputPath = outputDir + "/frame";
     string frameOutputFile = outputPath + "0.txt";
     const char* spaceDelim = " ";
     ofstream outputInit; 
@@ -310,7 +310,7 @@ void write_output(string frameOutputFile, uint64_t sideLength, vector<Vec3> *vox
 }
 
 
-int golOpenMP(int argc, char** argv) {
+int golOpenMP(int argc, char** argv, string outputDir) {
     string inputFile = argv[1];
     int numFrames = stoi(argv[2]);
     uint64_t sideLength = stoi(argv[3]);
@@ -335,9 +335,9 @@ int golOpenMP(int argc, char** argv) {
 
     bool isMoore;
     int numStates;
-    parse_input(inputFile, sideLength, &rules, &isMoore, &numStates, &voxels, states, states_tmp);
+    parse_input(outputDir, inputFile, sideLength, &rules, &isMoore, &numStates, &voxels, states, states_tmp);
 
-    string outputPath = "./output-files/frame";
+    string outputPath = outputDir + "/frame";
     string frameOutputFile;
 
     double frameTime = 0.0;
