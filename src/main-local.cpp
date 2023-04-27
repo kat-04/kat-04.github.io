@@ -27,8 +27,11 @@ int main(int argc, char** argv)
         if (version == "omp") {
             return golOpenMP(argc, argv, outputDir);
         }
+        /* if (version == "states") { */
+        /*     return golOpenMPStates(argc, argv, outputDir); */
+        /* } */
     }
-    cerr << "Usage: " << argv[0] << " input_file number_of_frames side_length version:[seq(default)/cuda/omp]" << endl;
+    cerr << "Usage: " << argv[0] << " input_file number_of_frames side_length version:[seq(default)/cuda/omp/states]" << endl;
     return 1;
     
 }

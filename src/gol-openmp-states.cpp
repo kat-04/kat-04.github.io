@@ -226,6 +226,10 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
             }
         }
         #pragma omp barrier
+        #pragma omp single
+        {
+        std::memcpy(states, states_tmp, (n * n * n + 7) / 8);
+        }
     }
 }
 
@@ -371,14 +375,10 @@ int golOpenMP(int argc, char** argv, string outputDir) {
         /*     cout << newVoxels[i] << endl; */
         /* } */
 
+        #pragma omp barrier
         frameTime = frameTimer.elapsed();
         totalSimulationTime += frameTime;
-        printf("frame %d time: %.6fs\n", f + 1, frameTime);
-        #pragma omp single
-        {
-        std::memcpy(states, states_tmp, (n * n * n + 7) / 8);
-        }
-
+        /* printf("frame %d time: %.6fs\n", f + 1, frameTime); */
         // Write to output
         write_output(frameOutputFile, sideLength, &newVoxels, states);
         newVoxels.swap(voxels);
