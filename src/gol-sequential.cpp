@@ -64,7 +64,12 @@ int golSequential(int argc, char** argv, string outputDir)
         if (curLine == 0) {
             tie(ruleMap, isMoore, numStates) = parseRules(line);
             
-            outputInit << sideLength << endl;
+            //write frame_init
+            ofstream frameInit;
+            frameInit.open(string(outputPath + "_init.txt"));
+            frameInit << sideLength << endl;
+            frameInit << numStates << endl;
+            frameInit.close();
         } else {
             //set voxel to on
             coords = tokenizeLine(line, spaceDelim);
@@ -87,7 +92,7 @@ int golSequential(int argc, char** argv, string outputDir)
         frameOutputFile = outputPath + to_string(f+1) + ".txt";
         ofstream output; 
         output.open(frameOutputFile);
-        output << sideLength << endl;
+        //output << sideLength << endl;
         //timer start
         double frameTime = 0.0;
         Timer frameTimer;
@@ -99,9 +104,9 @@ int golSequential(int argc, char** argv, string outputDir)
                     frameTimer.reset();
                     numAlive = 0;
                     if (isMoore) {
-                        for (uint64_t i = x - 1; i <= x + 1; i++) {
-                            for (uint64_t j = y - 1; j <= y + 1; j++) {
-                                for (uint64_t k = z - 1; k <= z + 1; k++) {
+                        for (uint64_t i = (x == 0) ? 0 : x - 1; i <= x + 1; i++) {
+                            for (uint64_t j = (y == 0) ? 0 : y - 1; j <= y + 1; j++) {
+                                for (uint64_t k = (z == 0) ? 0 : z - 1; k <= z + 1; k++) {
                                     if (i < sideLength && j < sideLength && k < sideLength) {
                                         if (!(x == i && y == j && z == k)) { //don't include self
                                             numAlive += cube[i][j][k] ? 1 : 0;

@@ -54,7 +54,7 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
         output.open(frameOutputFile);
        
         
-        output << sideLength << std::endl;
+        //output << sideLength << std::endl;
         for (uint64_t i = 0; i < sideLength * sideLength * sideLength; i++) {
             uint64_t z = (i / (sideLength * sideLength)) % sideLength;
             uint64_t y = (i / sideLength) % sideLength;

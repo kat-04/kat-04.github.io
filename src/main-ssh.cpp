@@ -6,17 +6,22 @@
 
 int main(int argc, char** argv)
 {
-    
-    // clean output files
-    system("rm -rf /tmp/output-files/");
-    system("mkdir /tmp/output-files/");
     std::string outputDir = "/tmp/output-files";
-
+    if (argc == 6) {
+        // if running checker change output dir
+        string version = argv[4];
+        system(("mkdir /tmp/output-files/" + version + "/").c_str());
+        outputDir = "/tmp/output-files/" + version;
+    } else {
+        // clean output files only if not running checker
+        system("rm -rf /tmp/output-files/");
+        system("mkdir /tmp/output-files/");
+    }
     //parse args
     if (argc == 4) {
         return golSequential(argc, argv, outputDir);
     } 
-    if (argc == 5) { // version specified 
+    if (argc == 5 || argc == 6) { // version specified 
         string version = argv[4];
         if (version == "seq") {
             return golSequential(argc, argv, outputDir);
