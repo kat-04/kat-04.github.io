@@ -54,10 +54,13 @@ def main():
 
         errorFlag = False
         diff = difflib.unified_diff(seqLines, parSortedLines, fromfile=f'seqFrame{i}', tofile=f'parFrame{i}')
-        if (diff): 
+        diffLines = []
+        for line in diff:
+            diffLines.append(line)
+        if (len(diffLines) > 0):
             errorFlag = True
             log = open(f'/tmp/output-files/logs/frame{i}.txt', "w")
-            log.writelines(diff)
+            log.writelines(diffLines)
 
         seqFrame.close()
         parFrame.close()

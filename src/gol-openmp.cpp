@@ -64,22 +64,14 @@ void get_moore_neighbors(Vec3 v, vector<Vec3> *neighbors) {
 }
 
 void get_vn_neighbors(Vec3 v, vector<Vec3> *neighbors) {
-    for (uint32_t x_n = (v.x == 0) ? 0 : v.x - 1; x_n < v.x + 2; x_n++) {
-        for (uint32_t y_n = (v.y == 0) ? 0 : v.y - 1; y_n < v.y + 2; y_n++) {
-            for (uint32_t z_n = (v.z == 0) ? 0 : v.z - 1; z_n < v.z + 2; z_n++) {
-                // If neighbor out of bounds of cube size
-                if (x_n >= n || y_n >= n || z_n >= n) {
-                    continue;
-                }
-                // Don't include itself
-                if (x_n == v.x && y_n == v.y && z_n == v.z) {
-                    continue;
-                }
-                if (((v.x + v.y + v.z) % 2) != ((x_n + y_n + z_n) % 2)) continue;
-                (*neighbors).push_back(Vec3(x_n, y_n, z_n));
-            }
-        }
-    }
+
+    if (v.x > 0 && v.x < n) (*neighbors).push_back(Vec3(v.x - 1, v.y, v.z));
+    if (v.x + 1 < n) (*neighbors).push_back(Vec3(v.x + 1, v.y, v.z));
+    if (v.y > 0 && v.y < n) (*neighbors).push_back(Vec3(v.x, v.y - 1, v.z));
+    if (v.y + 1 < n) (*neighbors).push_back(Vec3(v.x, v.y + 1, v.z));
+    if (v.z > 0 && v.z < n) (*neighbors).push_back(Vec3(v.x, v.y, v.z - 1));
+    if (v.z + 1 < n) (*neighbors).push_back(Vec3(v.x , v.y, v.z + 1));
+                
 }
 
 
@@ -256,7 +248,7 @@ void parse_input(string outputDir, string inputFile, uint64_t sideLength, map<in
         if (curLine == 0) {
             // Read in initial rule set and store it in variables
             tie((*rules), (*isMoore), (*numStates)) = parseRules(line);
-            outputInit << sideLength << endl;
+            //outputInit << sideLength << endl;
 
             //write frame_init
             ofstream frameInit;
@@ -302,7 +294,7 @@ void write_output(string frameOutputFile, uint64_t sideLength, vector<Vec3> *vox
     // Read and write to output file
     ofstream output;
     output.open(frameOutputFile);
-    output << sideLength << endl;
+    //output << sideLength << endl;
     for (auto v : *voxels) {
         // If voxel is alive
         if (is_alive(v, states)) {
