@@ -257,6 +257,13 @@ void parse_input(string outputDir, string inputFile, uint64_t sideLength, map<in
             // Read in initial rule set and store it in variables
             tie((*rules), (*isMoore), (*numStates)) = parseRules(line);
             outputInit << sideLength << endl;
+
+            //write frame_init
+            ofstream frameInit;
+            frameInit.open(string(outputPath + "_init.txt"));
+            frameInit << sideLength << endl;
+            frameInit << (*numStates) << endl;
+            frameInit.close();
         } else {
             // Get voxel coordinates
             coords = tokenizeLine(line, spaceDelim);

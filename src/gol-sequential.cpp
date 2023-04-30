@@ -64,7 +64,12 @@ int golSequential(int argc, char** argv, string outputDir)
         if (curLine == 0) {
             tie(ruleMap, isMoore, numStates) = parseRules(line);
             
-            //outputInit << sideLength << endl;
+            //write frame_init
+            ofstream frameInit;
+            frameInit.open(string(outputPath + "_init.txt"));
+            frameInit << sideLength << endl;
+            frameInit << numStates << endl;
+            frameInit.close();
         } else {
             //set voxel to on
             coords = tokenizeLine(line, spaceDelim);

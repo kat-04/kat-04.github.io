@@ -40,7 +40,14 @@ int loadCubeInput(char* file, uint64_t& sideLength, bool*& ruleset, int& numStat
     while (getline(input, line)) {
         if (curLine == 0) {
             std::tie(isMoore, numStates) = parseRulesCuda(line, ruleset);   
-            //outputInit << n << std::endl;
+
+            //write frame_init
+            std::ofstream frameInit;
+            std::string frameInitFile = outputDir + "_init.txt";
+            frameInit.open(frameInitFile);
+            frameInit << n << std::endl;
+            frameInit << numStates << std::endl;
+            frameInit.close();
         } else {
             //set voxel to on
             coords = tokenizeLine(line, spaceDelim);
