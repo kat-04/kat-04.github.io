@@ -16,6 +16,7 @@
 #include <iostream> //for cout
 #include "timing.h"
 #include "parse.h"
+#include "vec3.h"
 #include "gol-openmp.h"
 
 //RULE FORMAT: survival/birth/numStates/isMoore

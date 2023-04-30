@@ -2,6 +2,7 @@
 #include "mesh.h"
 #include "raymath.h"
 #include <sstream>
+#include <tuple>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -56,6 +57,14 @@ int main()
     const int screenWidth = 1600;
     const int screenHeight = 900;
 
+    //--------------------------------------------------------------------------------------
+    // LOAD VALUES
+    std::tuple<int, int> data;
+    data = parse_init("../output-files/frame_init.txt");
+    int size = std::get<0>(data);
+    int numStates = std::get<1>(data);
+    //--------------------------------------------------------------------------------------
+
     // Set logging method and configuration
     SetTraceLogCallback(log);
     SetConfigFlags(FLAG_MSAA_4X_HINT); // if available
@@ -63,18 +72,16 @@ int main()
 
     // Initialize the camera
     /* Vector3 starting_pos = (Vector3){ 30.0f, 10.0f, 10.0f }; */
-    Vector3 starting_pos = (Vector3){ 0.0f, 0.0f, 0.0f };
     Camera3D camera = { 0 };
-    camera.position = starting_pos; // Camera position
+    camera.position = (Vector3) { 0, size / 4.f, 2.f * size };
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
     camera.fovy = 45.0f;                                // Camera field-of-view Y
     camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+    Vector3 starting_pos = camera.position;
 
     // Cube mesh properties (width, height, length)
     Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
-
-
     //--------------------------------------------------------------------------------------
     // SHADERS
     Shader shader = LoadShader(TextFormat("libs/raylib/examples/shaders/resources/shaders/glsl%i/lighting_instancing.vs", GLSL_VERSION),
@@ -97,20 +104,33 @@ int main()
 
     // Color of the light: can either be preset or custom: (Color){ r, g, b, alpha }
     // Where 0 <= r, g, b, alpha <= 255 and alpha is opacity
-    Color light_color1 = (Color) { 255, 87, 115, 255 };
-    Light light1 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color1, shader);
-    Color light_color2 = (Color) { 208, 106, 252, 255 };
-    Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color2, shader);
+    /* Color light_color1 = (Color) { 255, 87, 115, 255 }; */
+    Light light1 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), WHITE, shader);
+    /* Color light_color2 = (Color) { 208, 106, 252, 255 }; */
+    Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), WHITE, shader);
+    Light light3 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), WHITE, shader);
+    Light light4 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), WHITE, shader);
     //--------------------------------------------------------------------------------------
 
 
     //--------------------------------------------------------------------------------------
     // MATERIALS
 
-    Color mat_color = WHITE;
-    Material matInstances = LoadMaterialDefault();
-    matInstances.shader = shader;
-    matInstances.maps[MATERIAL_MAP_DIFFUSE].color = mat_color;
+    std::vector<Color> mat_color;
+    /* for (int i = 0; i < numStates - 1; i++) { */
+    /*     mat_color.push_back((Color) { static_cast<unsigned char>(i * (205 / (numStates - 1)) + 50), 0, 0, 255 }); */
+    /* } */
+    mat_color.push_back((Color) { 64, 13, 252, 99 });
+    mat_color.push_back((Color) { 50, 153, 219, 86 });
+    mat_color.push_back((Color) { 110, 220, 35, 86 });
+    mat_color.push_back((Color) { 255, 220, 0, 100 });
+
+    Material matInstances[numStates - 1];
+    for (int i = 0; i < numStates - 1; i++) {
+        matInstances[i] = LoadMaterialDefault();
+        matInstances[i].shader = shader;
+        matInstances[i].maps[MATERIAL_MAP_DIFFUSE].color = mat_color[i];
+    }
     //--------------------------------------------------------------------------------------
 
 
@@ -137,12 +157,11 @@ int main()
     std::string filename;
 
     // parse_data return format
-    std::tuple<int, std::vector<Matrix> > info;
+    std::map<int, std::vector<Matrix> > info;
 
     // Variables for generating mesh instance
-    Matrix *transforms;
-    int size;
-    int num_blocks;
+    std::vector<Matrix*> transforms;
+    std::vector<int> num_blocks;
     Vector3 origin = Vector3Zero();
 
     // Toggles for different modes
@@ -186,10 +205,15 @@ int main()
         // Update shader and light accordingly to follow camera movement
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
-        light1.position = (Vector3){camera.position.x, camera.position.y, -camera.position.z};
-        light2.position = (Vector3){-camera.position.x, camera.position.y, camera.position.z};
+        light1.position = (Vector3){-starting_pos.x, starting_pos.y, starting_pos.z};
+        light2.position = (Vector3){starting_pos.x, starting_pos.y, -starting_pos.z};
+        light3.position = (Vector3){starting_pos.x, starting_pos.y, starting_pos.z};
+        light4.position = (Vector3){-starting_pos.x, starting_pos.y, -starting_pos.z};
         UpdateLightValues(shader, light1);
         UpdateLightValues(shader, light2);
+        UpdateLightValues(shader, light3);
+        UpdateLightValues(shader, light4);
+        /* UpdateLightValues(shader, light2); */
         //----------------------------------------------------------------------------------
 
 
@@ -256,30 +280,26 @@ int main()
             }
 
             if (updated) {
+                transforms.clear();
+                num_blocks.clear();
                 // Get transforms and other data from the file
-                info = parse_data(filename);
-                transforms = &(std::get<1>(info))[0];
-                /* std::cout << "Transforms: " << transforms[0].m5 << std::endl; */
-                size = std::get<0>(info);
-                num_blocks = (std::get<1>(info)).size();
+                info = parse_data(filename, numStates, size);
+                for (int i = 1; i < numStates; i++) {
+                    transforms.push_back(&(info[i])[0]);
+                    /* std::cout << "Transforms: " << transforms[0].m5 << std::endl; */
+                    num_blocks.push_back((info[i]).size());
+                }
                 updated = false;
                 /* std::cout << "Number of blocks: " << num_blocks << std::endl; */
             }
 
             // Draw outline (bounding box)
-            if (!first) {
-                /* std::cout << "Origin: (" << origin.x << ", " << origin.y << ", " << origin.z << ")" << std::endl; */
-                /* std::cout << "Size: " << size << std::endl; */
-                DrawCubeWires(origin, size, size, size, RED);
-                // Draw mesh instances
-                DrawMeshInstanced(cube, matInstances, transforms, num_blocks);
-            }
-
-            if (first) {
-                // sets camera position in accordance to the size of the cube during first frame
-                camera.position = (Vector3) { 0, size / 4.f, 2.f * size };
-                starting_pos = camera.position;
-                std::cout << "Camera Position: (" << starting_pos.x << ", " << starting_pos.y << ", " << starting_pos.z << ")" << std::endl;
+            /* std::cout << "Origin: (" << origin.x << ", " << origin.y << ", " << origin.z << ")" << std::endl; */
+            /* std::cout << "Size: " << size << std::endl; */
+            DrawCubeWires(origin, size, size, size, RED);
+            // Draw mesh instances
+            for (int i = 0; i < numStates - 1; i++) {
+                DrawMeshInstanced(cube, matInstances[i], transforms.at(i), num_blocks.at(i));
             }
 
             first = false;

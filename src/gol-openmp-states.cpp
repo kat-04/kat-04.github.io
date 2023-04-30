@@ -1,6 +1,7 @@
 // Sequential version of 3D gol
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <getopt.h>
 #include <string>
 #include <iostream>
@@ -14,9 +15,11 @@
 #include <bitset>
 #include <omp.h>
 #include <iostream> //for cout
+#include <iomanip>
 #include "timing.h"
 #include "parse.h"
-#include "gol-openmp.h"
+#include "vec3.h"
+#include "gol-openmp-states.h"
 
 //RULE FORMAT: survival/birth/numStates/isMoore
 //MAP FORMAT: keys 0-26 -> birth for that num neighbors,
@@ -63,6 +66,7 @@ void get_moore_neighbors(Vec3 v, vector<Vec3> *neighbors) {
     }
 }
 
+// TODO: FIX TO MATCH OTHER OPENMP
 void get_vn_neighbors(Vec3 v, vector<Vec3> *neighbors) {
     for (uint32_t x_n = (v.x == 0) ? 0 : v.x - 1; x_n < v.x + 2; x_n++) {
         for (uint32_t y_n = (v.y == 0) ? 0 : v.y - 1; y_n < v.y + 2; y_n++) {
@@ -83,45 +87,144 @@ void get_vn_neighbors(Vec3 v, vector<Vec3> *neighbors) {
 }
 
 
-bool is_alive(Vec3 v, uint8_t *states) {
+bool is_alive(Vec3 v, uint8_t numStates, uint8_t *states) {
     // Index in terms of bits (as if the bits were a whole array) 
     uint64_t bit_index;
     // Bit and index in array of neighbor
     uint64_t index;
-    uint8_t bit;
+    uint8_t half;
 
     bit_index = v.x + v.y * n + v.z * n * n;
-    index = bit_index / 8;
-    bit = bit_index % 8;
+    index = bit_index / 2;
+    half = bit_index % 2;
 
-    uint8_t mask = 1;
-    uint8_t alive = (states[index] >> (7 - bit)) & mask;
+    // Get correct half of our state
+    uint8_t mask = (uint8_t)0b1111;
 
-    return (alive == 1);
+    // Zero out other half, and only get the half we are interested in
+    //
+    // Doesn't matter if it's in the correct half -- aka we only want to
+    // check if it's 0 and regardless of if it's in the 1st 4 bits or the 2nd
+    // 4 bits, it will always be 0 if 0 and nonzero if nonzero
+    uint8_t alive = (states[index] >> (4 * (1 - half))) & mask;
+
+    return (alive == numStates - 1);
 }
+
+
+bool is_dead(Vec3 v, uint8_t *states) {
+    // Index in terms of bits (as if the bits were a whole array) 
+    uint64_t bit_index;
+    // Bit and index in array of neighbor
+    uint64_t index;
+    uint8_t half;
+
+    bit_index = v.x + v.y * n + v.z * n * n;
+    index = bit_index / 2;
+    half = bit_index % 2;
+
+    // Get correct half of our state
+    uint8_t mask = (uint8_t)0b1111;
+
+    // Zero out other half, and only get the half we are interested in
+    //
+    // Doesn't matter if it's in the correct half -- aka we only want to
+    // check if it's 0 and regardless of if it's in the 1st 4 bits or the 2nd
+    // 4 bits, it will always be 0 if 0 and nonzero if nonzero
+    uint8_t alive = (states[index] >> (4 * (1 - half))) & mask;
+
+    return (alive == 0);
+}
+
+
+// Set initial state of voxel v
+// State contains the voxel's state in the last 4 bits
+void set_state(Vec3 v, uint8_t state, uint8_t *states) {
+    // Index in terms of 4 bits (as if there are 2 states per uint8_t) 
+    /* cout << "Setting voxel " << v << " with state " << unsigned(state) << endl; */
+    uint64_t bit_index;
+    // Half (first or second) and index in array of neighbor
+    uint64_t index;
+    uint8_t half;
+
+    bit_index = v.x + v.y * n + v.z * n * n;
+    index = bit_index / 2;
+    half = bit_index % 2;
+
+    state = state << (4 * (1 - half));
+    uint8_t mask = (uint8_t)0b1111 << (4 * half);
+    states[index] &= mask;
+    states[index] |= state;
+}
+
+
+
+// Get state at current voxel position
+uint8_t get_state(Vec3 v, uint8_t *states) {
+    // Index in terms of 4 bits (as if there are 2 states per uint8_t) 
+    uint64_t bit_index;
+    // Half (first or second) and index in array of neighbor
+    uint64_t index;
+    uint8_t half;
+
+    bit_index = v.x + v.y * n + v.z * n * n;
+    index = bit_index / 2;
+    half = bit_index % 2;
+
+    uint8_t state = states[index] >> (4 * (1 - half));
+    uint8_t mask = (uint8_t)0b1111;
+    return state & mask;
+}
+
+
+
+// Decrement the state of the voxel (should currently be alive)
+void decrement_state(Vec3 v, uint8_t *states) {
+    // Index in terms of bits (as if the bits were a whole array) 
+    uint64_t bit_index;
+    // Bit and index in array of neighbor
+    uint64_t index;
+    uint8_t half;
+
+    bit_index = v.x + v.y * n + v.z * n * n;
+    index = bit_index / 2;
+    half = bit_index % 2;
+
+    uint8_t mask = (uint8_t)0b1111;
+    uint8_t new_state = ((states[index] >> (4 * (1 - half))) & mask) - 1;
+    new_state = new_state << (4 * (1 - half));
+    mask = mask << 4 * half;
+    states[index] &= mask;
+    states[index] |= new_state;
+}
+
 
 
 // Update an alive cell as dead or dead as alive
-void toggle_state(Vec3 v, uint8_t *states) {
+void init_state(Vec3 v, int numStates, uint8_t *states) {
     // Index in terms of bits (as if the bits were a whole array) 
     uint64_t bit_index;
     // Bit and index in array of neighbor
     uint64_t index;
-    uint8_t bit;
+    uint8_t half;
 
     bit_index = v.x + v.y * n + v.z * n * n;
-    index = bit_index / 8;
-    bit = bit_index % 8;
+    index = bit_index / 2;
+    half = bit_index % 2;
 
-    uint8_t mask = 1 << (7 - bit);
-    states[index] ^= mask;
+    uint8_t state = (numStates - 1) << 4 * (1 - half);
+    uint8_t mask = (uint8_t)0b1111 << 4 * half;
+    states[index] &= mask;
+    states[index] |= state;
 }
 
 
-void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3> *newAlive, uint8_t *states, uint8_t *states_tmp, get_neighbors_t get_neighbors) {
+
+void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3> *newAlive, vector<Vec3> *decayVoxels, int numStates, uint8_t *states, uint8_t *states_tmp, get_neighbors_t get_neighbors) {
 
     /* unordered_map<Vec3, bool, hashVec3> to_toggle; */
     /* int num_threads, chunk; */
+    vector<Vec3> temp_decay;
 
     #pragma omp parallel
     {
@@ -142,10 +245,14 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
             /* cout << "Hellooo" << endl; */
 
             num_alive = 0;
+            /* #pragma omp critical */
+            /* { */
+            /* cout << voxel << ": " << hex << get_state(voxel, states) << dec << endl; */
+            /* } */
 
-            // If current voxel is dead, we want to skip over it
+            // If current voxel is dead/decaying, we want to skip over it
             // We don't want to search cells that are not neighbors of alive cells
-            if (!is_alive(voxel, states)) {
+            if (is_dead(voxel, states)) {
                 continue;
             }
 
@@ -160,7 +267,7 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
             /* cout << "Voxel: " << voxel << endl; */
             /* cout << "Neighbors: " << endl; */
             for (auto neighbor : neighbors) {
-                if (is_alive(neighbor, states)) {
+                if (is_alive(neighbor, numStates, states)) {
                     /* cout << neighbor << endl; */
                     num_alive++;
                 }
@@ -168,13 +275,14 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
             // Check survival rule
             #pragma omp critical
             {
-            if ((*rules)[27 + num_alive]) {
+            if ((*rules)[27 + num_alive] && get_state(voxel, states) == numStates - 1) {
                 // If it survives
                 /* cout << voxel << " survives!" << endl; */
                 (*newAlive).push_back(voxel);
             } else {
+                /* cout << "Pushing to decay " << voxel << endl; */
                 /* to_toggle.insert( {voxel, true} ); */
-                toggle_state(voxel, states_tmp);
+                (*decayVoxels).push_back(voxel);
             }
             }
 
@@ -187,18 +295,11 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
             for (auto neighbor : neighbors) {
                 // If neighbor is alive, skip because we do not want to work
                 // with alive neighbors as they will be covered in a later for loop
-                if (is_alive(neighbor, states)) continue;
+                if (!is_dead(neighbor, states)) continue;
 
                 // If neighbor has already been updated, do not update again
                 /* if (find(to_toggle.begin(), to_toggle.end(), neighbor) != to_toggle.end()) continue; */
-                if (is_alive(neighbor, states_tmp)) continue;
-                
-                /* try { */
-                /*     to_toggle.at(neighbor); */
-                /*     continue; */
-                /* } */
-                /* catch(const out_of_range &e) { */
-                /* } */
+                if (!is_dead(neighbor, states_tmp)) continue;
 
                 num_alive = 0;
                 n_neighbors.clear();
@@ -206,7 +307,7 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
                 // Iterate through dead neighbors' neighbors
                 get_neighbors(neighbor, &n_neighbors);
                 for (auto n_neighbor : n_neighbors) {
-                    if (is_alive(n_neighbor, states)) {
+                    if (is_alive(n_neighbor, numStates, states)) {
                         num_alive++;
                     }
                 }
@@ -215,26 +316,42 @@ void increment_frame(map<int, bool> *rules, vector<Vec3> *curAlive, vector<Vec3>
                 if ((*rules)[num_alive]) {
                     #pragma omp critical
                     {
-                    if (!is_alive(neighbor, states_tmp)) {
+                    if (is_dead(neighbor, states_tmp)) {
                         (*newAlive).push_back(neighbor);
                         /* cout << neighbor << " is born!" << endl; */
                         /* to_toggle.insert( {neighbor, true} ); */
-                        toggle_state(neighbor, states_tmp);
+                        init_state(neighbor, numStates, states_tmp);
                     }
                     }
                 }
             }
         }
+
         #pragma omp barrier
-        #pragma omp single
-        {
-        std::memcpy(states, states_tmp, (n * n * n + 7) / 8);
+        #pragma omp for schedule(guided)
+        for (auto voxel : (*decayVoxels)) {
+            #pragma omp critical
+            {
+            decrement_state(voxel, states_tmp);
+            if (!is_dead(voxel, states_tmp)) {
+                temp_decay.push_back(voxel);
+                /* cout << "DECAY: " << voxel << endl; */
+            }
+            }
         }
     }
+
+    /* (*decayVoxels).clear(); */
+    temp_decay.swap(*decayVoxels);
+    /* for (auto v : temp_decay) { */
+    /*     cout << "Decay: " << v << endl; */
+    /*     (*decayVoxels).push_back(v); */
+    /* } */
+    std::memcpy(states, states_tmp, (n * n * n + 1) / 2);
 }
 
 
-void parse_input(string outputDir, string inputFile, uint64_t sideLength, map<int, bool> *rules, bool *isMoore, int *numStates, vector<Vec3> *voxels, uint8_t *states, uint8_t *states_tmp)
+void parse_input(string outputDir, string inputFile, uint64_t sideLength, map<int, bool> *rules, bool *isMoore, int *numStates, vector<Vec3> *voxels, vector<Vec3> *decayVoxels, uint8_t *states, uint8_t *states_tmp)
 {
     // Open input file
     fstream input;
@@ -260,33 +377,39 @@ void parse_input(string outputDir, string inputFile, uint64_t sideLength, map<in
         if (curLine == 0) {
             // Read in initial rule set and store it in variables
             tie((*rules), (*isMoore), (*numStates)) = parseRules(line);
-            outputInit << sideLength << endl;
         } else {
             // Get voxel coordinates
             coords = tokenizeLine(line, spaceDelim);
             uint32_t x = stoi(coords[0]);
             uint32_t y = stoi(coords[1]);
             uint32_t z = stoi(coords[2]);
+            uint8_t v_state = (uint8_t)stoi(coords[3]);
 
             // Check if and input voxel coordinates are out of side bounds
             if (x >= sideLength || y >= sideLength || z >= sideLength) {
-                cerr << "Input coordinates out of bounds" << std::endl;
+                cerr << "Input coordinates out of bounds" << endl;
             }
 
-            // Add voxel to map with "alive" state
-            (*voxels).push_back(Vec3(x, y, z));
+            // Check if state is in state bounds
+            if (v_state >= *numStates) {
+                cerr << "Input state out of bounds" << endl;
+            }
 
-            // Toggle state to 1
-            /* uint64_t linearIndex = x + y * n + z * n * n; */
-            /* uint8_t stateIndex = linearIndex / 8; */
-            /* uint8_t bit = linearIndex % 8; */
-            /* uint8_t mask = 1 << (7 - bit); */
-            /* states[stateIndex] |= mask; */
-            toggle_state(Vec3(x, y, z), states);
-            toggle_state(Vec3(x, y, z), states_tmp);
+            /* cout << "numStates: " << unsigned(v_state) << endl; */
+
+            // Add voxel to map with "alive" state
+            if (v_state == *numStates - 1) {
+                (*voxels).push_back(Vec3(x, y, z));
+            } else {
+                (*decayVoxels).push_back(Vec3(x, y, z));
+            }
+
+            // Set state
+            set_state(Vec3(x, y, z), v_state, states);
+            set_state(Vec3(x, y, z), v_state, states_tmp);
 
             // Write it to output file
-            outputInit << coords[0] << " " << coords[1] << " " << coords[2] << endl;
+            outputInit << coords[0] << " " << coords[1] << " " << coords[2] << " " << unsigned(v_state) << endl;
         }
         curLine++;
     }
@@ -294,23 +417,32 @@ void parse_input(string outputDir, string inputFile, uint64_t sideLength, map<in
     outputInit.close();
 }
 
-
-void write_output(string frameOutputFile, uint64_t sideLength, vector<Vec3> *voxels, uint8_t *states) {
-    // Read and write to output file
+void write_init(string frameOutputFile, uint64_t sideLength, int numStates) {
     ofstream output;
     output.open(frameOutputFile);
     output << sideLength << endl;
+    /* cout << numStates << endl; */
+    output << numStates << endl;
+    output.close();
+}
+
+void write_output(string frameOutputFile, vector<Vec3> *voxels, vector<Vec3> *decayVoxels, uint8_t *states) {
+    // Read and write to output file
+    ofstream output;
+    output.open(frameOutputFile);
+    for (auto v : *decayVoxels) {
+        // If voxel is alive
+        output << v.x << " " << v.y << " " << v.z << " " << unsigned(get_state(v, states)) << endl;
+    }
     for (auto v : *voxels) {
         // If voxel is alive
-        if (is_alive(v, states)) {
-            output << v.x << " " << v.y << " " << v.z << endl;
-        }
+        output << v.x << " " << v.y << " " << v.z << " " << unsigned(get_state(v, states)) << endl;
     }
     output.close();
 }
 
 
-int golOpenMP(int argc, char** argv, string outputDir) {
+int golOpenMPStates(int argc, char** argv, string outputDir) {
     string inputFile = argv[1];
     int numFrames = stoi(argv[2]);
     uint64_t sideLength = stoi(argv[3]);
@@ -318,11 +450,11 @@ int golOpenMP(int argc, char** argv, string outputDir) {
     n = sideLength;
 
     map<int, bool> rules;
-    vector<Vec3> voxels, newVoxels;
+    vector<Vec3> voxels, newVoxels, decayVoxels;
     uint8_t *states;
     uint8_t *states_tmp;
-    states = (uint8_t *)calloc(sizeof(uint8_t), ((sideLength * sideLength * sideLength + 7) / 8));
-    states_tmp = (uint8_t *)calloc(sizeof(uint8_t), ((sideLength * sideLength * sideLength + 7) / 8));
+    states = (uint8_t *)calloc(sizeof(uint8_t), ((sideLength * sideLength * sideLength + 1) / 2));
+    states_tmp = (uint8_t *)calloc(sizeof(uint8_t), ((sideLength * sideLength * sideLength + 1) / 2));
     /* fill_n(states, (sideLength * sideLength * sideLength + 7) / 8, 0); */
     if (!states) {
         cerr << "Malloc states failed" << endl;
@@ -333,12 +465,28 @@ int golOpenMP(int argc, char** argv, string outputDir) {
         return 1;
     }
 
+
     bool isMoore;
     int numStates;
-    parse_input(outputDir, inputFile, sideLength, &rules, &isMoore, &numStates, &voxels, states, states_tmp);
+    parse_input(outputDir, inputFile, sideLength, &rules, &isMoore, &numStates, &voxels, &decayVoxels, states, states_tmp);
+
+    // Sanity test
+    /* uint8_t half = 0; */
+    /* uint8_t state = (uint8_t)(0b10110000); */
+    /* cout << "State: " << hex << +state << endl; */
+    /* uint8_t mask = (uint8_t)0b1111 << 4 * half; */
+    /* cout << "Mask: " << hex << +mask << endl; */
+    /* uint8_t new_state = (numStates - 1) << 4 * (1 - half); */
+    /* cout << "New state: " << hex << +new_state << endl; */
+    /* state &= mask; */
+    /* cout << "State: " << hex << +state << endl; */
+    /* state |= new_state; */
+    /* cout << "Result: " << hex << +state << endl; */
 
     string outputPath = outputDir + "/frame";
     string frameOutputFile;
+
+    write_init(outputPath + "_init.txt", sideLength, numStates);
 
     double frameTime = 0.0;
     double totalSimulationTime = 0.0;
@@ -360,9 +508,9 @@ int golOpenMP(int argc, char** argv, string outputDir) {
 
         /* cout << "Hellooooo!" << endl; */
         if (isMoore) {
-            increment_frame(&rules, &voxels, &newVoxels, states, states_tmp, &get_moore_neighbors);
+            increment_frame(&rules, &voxels, &newVoxels, &decayVoxels, numStates, states, states_tmp, &get_moore_neighbors);
         } else {
-            increment_frame(&rules, &voxels, &newVoxels, states, states_tmp, &get_vn_neighbors);
+            increment_frame(&rules, &voxels, &newVoxels, &decayVoxels, numStates, states, states_tmp, &get_vn_neighbors);
         }
 
         /* for (int i = 0; i < sizeof(states) / sizeof(uint8_t); i++) { */
@@ -379,8 +527,9 @@ int golOpenMP(int argc, char** argv, string outputDir) {
         frameTime = frameTimer.elapsed();
         totalSimulationTime += frameTime;
         /* printf("frame %d time: %.6fs\n", f + 1, frameTime); */
+        /* cout << "Size: " << newVoxels.size() << endl; */
         // Write to output
-        write_output(frameOutputFile, sideLength, &newVoxels, states);
+        write_output(frameOutputFile, &newVoxels, &decayVoxels, states);
         newVoxels.swap(voxels);
         newVoxels.clear();
     }

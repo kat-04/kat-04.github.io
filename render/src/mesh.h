@@ -4,8 +4,13 @@
 #include <tuple>
 #include <string>
 #include <vector>
+#include <map>
 #include "raymath.h"
 
-std::tuple<int, std::vector<Matrix> > parse_data(std::string path_to_frame);
+
+std::tuple<int, int> parse_init(std::string path_to_init);
+
+
+std::map<int, std::vector<Matrix> > parse_data(std::string path_to_frame, int num_states, int size);
 
 #endif
