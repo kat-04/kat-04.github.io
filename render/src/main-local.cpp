@@ -105,11 +105,11 @@ int main()
     // Color of the light: can either be preset or custom: (Color){ r, g, b, alpha }
     // Where 0 <= r, g, b, alpha <= 255 and alpha is opacity
     Color light_color = (Color) { 255, 255, 255, 100 };
-    Light light1 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
-    /* Color light_color2 = (Color) { 208, 106, 252, 255 }; */
-    Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
-    Light light3 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
-    Light light4 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
+    Light light1 = CreateLight(LIGHT_POINT, camera.position, Vector3Zero(), light_color, shader);
+    /* /1* Color light_color2 = (Color) { 208, 106, 252, 255 }; *1/ */
+    /* Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader); */
+    /* Light light3 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader); */
+    /* Light light4 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader); */
     //--------------------------------------------------------------------------------------
 
 
@@ -120,10 +120,10 @@ int main()
     /* for (int i = 0; i < numStates - 1; i++) { */
     /*     mat_color.push_back((Color) { static_cast<unsigned char>(i * (205 / (numStates - 1)) + 50), 0, 0, 255 }); */
     /* } */
-    mat_color.push_back((Color) { 64, 13, 252, 99 });
-    mat_color.push_back((Color) { 50, 153, 219, 86 });
-    mat_color.push_back((Color) { 110, 220, 35, 86 });
-    mat_color.push_back((Color) { 255, 220, 0, 100 });
+    mat_color.push_back((Color) { 255, 17, 10, 255 });
+    mat_color.push_back((Color) { 230, 34, 221, 229 });
+    mat_color.push_back((Color) { 112, 0, 249, 250 });
+    mat_color.push_back((Color) { 13, 173, 251, 250 });
 
     Material matInstances[numStates - 1];
     for (int i = 0; i < numStates - 1; i++) {
@@ -131,6 +131,9 @@ int main()
         matInstances[i].shader = shader;
         matInstances[i].maps[MATERIAL_MAP_DIFFUSE].color = mat_color[i];
     }
+
+    Material matDefault = LoadMaterialDefault();
+    matDefault.maps[MATERIAL_MAP_DIFFUSE].color = BLUE;
     //--------------------------------------------------------------------------------------
 
 
@@ -205,15 +208,14 @@ int main()
         // Update shader and light accordingly to follow camera movement
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
-        light1.position = (Vector3){-camera.position.x, camera.position.y, camera.position.z};
-        light2.position = (Vector3){camera.position.x, camera.position.y, camera.position.z};
-        light3.position = (Vector3){-camera.position.x, camera.position.y, -camera.position.z};
-        light4.position = (Vector3){camera.position.x, camera.position.y, -camera.position.z};
+        light1.position = (Vector3){camera.position.x, camera.position.y, camera.position.z};
+        /* light2.position = (Vector3){camera.position.x, camera.position.y, camera.position.z}; */
+        /* light3.position = (Vector3){-camera.position.x, camera.position.y, -camera.position.z}; */
+        /* light4.position = (Vector3){camera.position.x, camera.position.y, -camera.position.z}; */
         UpdateLightValues(shader, light1);
-        UpdateLightValues(shader, light2);
-        UpdateLightValues(shader, light3);
-        UpdateLightValues(shader, light4);
         /* UpdateLightValues(shader, light2); */
+        /* UpdateLightValues(shader, light3); */
+        /* UpdateLightValues(shader, light4); */
         //----------------------------------------------------------------------------------
 
 
@@ -297,6 +299,7 @@ int main()
             /* std::cout << "Origin: (" << origin.x << ", " << origin.y << ", " << origin.z << ")" << std::endl; */
             /* std::cout << "Size: " << size << std::endl; */
             DrawCubeWires(origin, size, size, size, RED);
+            /* DrawMesh(cube, matDefault, MatrixTranslate(-camera.position.x, camera.position.y, camera.position.z)); */
             // Draw mesh instances
             for (int i = 0; i < numStates - 1; i++) {
                 DrawMeshInstanced(cube, matInstances[i], transforms.at(i), num_blocks.at(i));

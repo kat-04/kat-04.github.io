@@ -79,7 +79,7 @@ std::map<int, std::vector<Matrix> > parse_data(std::string path_to_frame, int nu
 
         // Translates each pixel by its coordinates
         // Then translates it down to adjust for origin
-        std::cout << std::stoi(out[0]) << std::endl;
+        /* std::cout << std::stoi(out[0]) << std::endl; */
         Matrix v = MatrixMultiply(MatrixTranslate(std::stof(out[0]), std::stof(out[1]), std::stof(out[2])), shift);
 
         // add to vector
