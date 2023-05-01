@@ -2,7 +2,7 @@
 #include <string>
 #include "gol-sequential.h"
 /* #include "gol-cuda.cpp" */
-/* #include "gol-openmp.h" */
+// #include "gol-openmp.h" 
 #include "gol-openmp-states.h"
 
 int main(int argc, char** argv)
