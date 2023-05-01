@@ -104,12 +104,12 @@ int main()
 
     // Color of the light: can either be preset or custom: (Color){ r, g, b, alpha }
     // Where 0 <= r, g, b, alpha <= 255 and alpha is opacity
-    /* Color light_color1 = (Color) { 255, 87, 115, 255 }; */
-    Light light1 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), WHITE, shader);
+    Color light_color = (Color) { 255, 255, 255, 100 };
+    Light light1 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
     /* Color light_color2 = (Color) { 208, 106, 252, 255 }; */
-    Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), WHITE, shader);
-    Light light3 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), WHITE, shader);
-    Light light4 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), WHITE, shader);
+    Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
+    Light light3 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
+    Light light4 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader);
     //--------------------------------------------------------------------------------------
 
 
@@ -205,10 +205,10 @@ int main()
         // Update shader and light accordingly to follow camera movement
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
-        light1.position = (Vector3){-starting_pos.x, starting_pos.y, starting_pos.z};
-        light2.position = (Vector3){starting_pos.x, starting_pos.y, -starting_pos.z};
-        light3.position = (Vector3){starting_pos.x, starting_pos.y, starting_pos.z};
-        light4.position = (Vector3){-starting_pos.x, starting_pos.y, -starting_pos.z};
+        light1.position = (Vector3){-camera.position.x, camera.position.y, camera.position.z};
+        light2.position = (Vector3){camera.position.x, camera.position.y, camera.position.z};
+        light3.position = (Vector3){-camera.position.x, camera.position.y, -camera.position.z};
+        light4.position = (Vector3){camera.position.x, camera.position.y, -camera.position.z};
         UpdateLightValues(shader, light1);
         UpdateLightValues(shader, light2);
         UpdateLightValues(shader, light3);
