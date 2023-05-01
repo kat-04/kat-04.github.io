@@ -20,7 +20,7 @@ with open(file, 'w') as f:
     for x in range(n):
         for y in range(n):
             for z in range(n):
-                if (random.random() < 0.6):
-                    f.write(f"{x} {y} {z}\n");
+                if (random.random() < 0.4):
+                    f.write(f"{40 + x} {40 + y} { 40 + z} 4\n")
                 # if ((x + y + z) % 10 != 0):
                 #     f.write(f"{x} {y} {z}\n");

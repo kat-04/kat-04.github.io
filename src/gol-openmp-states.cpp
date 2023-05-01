@@ -446,7 +446,6 @@ int golOpenMPStates(int argc, char** argv, string outputDir) {
     string inputFile = argv[1];
     int numFrames = stoi(argv[2]);
     uint64_t sideLength = stoi(argv[3]);
-
     n = sideLength;
 
     map<int, bool> rules;
