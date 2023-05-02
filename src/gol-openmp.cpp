@@ -65,14 +65,12 @@ void get_moore_neighbors(Vec3 v, vector<Vec3> *neighbors) {
 }
 
 void get_vn_neighbors(Vec3 v, vector<Vec3> *neighbors) {
-
     if (v.x > 0 && v.x < n) (*neighbors).push_back(Vec3(v.x - 1, v.y, v.z));
     if (v.x + 1 < n) (*neighbors).push_back(Vec3(v.x + 1, v.y, v.z));
     if (v.y > 0 && v.y < n) (*neighbors).push_back(Vec3(v.x, v.y - 1, v.z));
     if (v.y + 1 < n) (*neighbors).push_back(Vec3(v.x, v.y + 1, v.z));
     if (v.z > 0 && v.z < n) (*neighbors).push_back(Vec3(v.x, v.y, v.z - 1));
     if (v.z + 1 < n) (*neighbors).push_back(Vec3(v.x , v.y, v.z + 1));
-                
 }
 
 
