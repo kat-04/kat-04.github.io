@@ -17,7 +17,7 @@
 
 
 int loadCubeInput(char* file, uint64_t& sideLength, bool*& ruleset, int& numStates, bool& isMoore,
-                  uint8_t*& inputData, uint64_t n, char* outputPath) {
+                  uint8_t*& inputData, uint64_t n, char* outputPath, uint32_t*& minMaxs) {
     std::fstream input;
     input.open(file, std::ios::in);
     std::string line;
@@ -26,6 +26,11 @@ int loadCubeInput(char* file, uint64_t& sideLength, bool*& ruleset, int& numStat
     const char* spaceDelim = " ";
     inputData = new uint8_t[(n*n*n + 7) / 8];
     memset(inputData, 0, sizeof(inputData));
+    minMaxs = new uint32_t[6];
+    // /memset(minMaxs, 0, sizeof(minMaxs));
+    // minMaxs[3] = n - 1;
+    // minMaxs[4] = n - 1;
+    // minMaxs[5] = n - 1;
 
     //write frame0 to be same status as input (updates start at frame1)
     std::string outputDir = outputPath;

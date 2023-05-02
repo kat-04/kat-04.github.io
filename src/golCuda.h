@@ -12,10 +12,13 @@ private:
     uint64_t sideLength;
     bool isMoore;
     int numStates;
+    uint32_t* minMaxs;
     
     Cube* cube;
     bool* ruleset;
     uint8_t* inputData;
+
+    uint32_t* cudaDeviceMinMaxs;
 
     uint8_t* cudaDeviceInputData;
     uint8_t* cudaDeviceOutputData;
@@ -34,6 +37,8 @@ public:
     void allocOutputCube(uint64_t sideLength);
 
     void clearOutputCube();
+
+    void updateBounds();
 
     void advanceFrame();
 

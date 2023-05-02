@@ -19,7 +19,7 @@
 #include "golCuda.h"
 
 #define BLOCK_SIZE 256
-
+#define NUM_SUB_CUBES 64
 // Uncomment for faster runtimes
 #define DEBUG
 
@@ -42,7 +42,10 @@ struct GlobalConstants {
     uint64_t sideLength;
     bool isMoore;
     int numStates;
+
     bool* ruleset;
+    uint32_t* minMaxs;
+
     uint8_t* inputData;
     uint8_t* outputData;
 };
@@ -185,6 +188,69 @@ __global__ void kernelDoIterationVonNeumann() {
     }
 }
 
+__global__ void kernelGetGlobalBounds() {
+    uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t n = cuConstIterationParams.sideLength;
+    if (index >= (n * n * n + 7) / (8 * NUM_SUB_CUBES)) {
+        return;
+    } 
+
+    uint64_t threadSideLen = (n + (blockDim.x * gridDim.x) - 1) / (blockDim.x * gridDim.x);
+    uint64_t localMinX = n - 1;
+    uint64_t localMinY = n - 1;
+    uint64_t localMinZ = n - 1;
+    uint64_t localMaxX = 0;
+    uint64_t localMaxY = 0;
+    uint64_t localMaxZ = 0;
+
+    uint64_t bit_index;
+    // Bit and index in array of neighbor
+    uint64_t linIndex;
+    uint8_t bit;
+    for (uint64_t x = threadSideLen * (index); x < threadSideLen * (1 + (index)); x++) {
+        for (uint64_t y = threadSideLen * (index); y < threadSideLen * (1 + (index)); y++) {
+            for (uint64_t z = threadSideLen * (index); z < threadSideLen * (1 + (index)); z++) {
+                if (x >= n || y >= n || z >= n) {
+                    continue;
+                }
+
+                bit_index = x + y * n + z * n * n;
+                linIndex = bit_index / 8;
+                bit = bit_index % 8;
+
+                uint8_t mask = 1;
+                uint8_t alive = ((cuConstIterationParams.inputData[linIndex] >> (7 - bit))) & mask;
+                if (alive) {
+                    printf("%d, %d, %d is alive\n", x, y, z);
+                }
+                if (alive) {
+                    // update local values
+                    //printf("thread %i checking %i, %i, %i \n", index, x, y, z);
+                    localMinX = min(localMinX, x);
+                    localMinY = min(localMinY, y);
+                    localMinZ = min(localMinZ, z);
+                    localMaxX = max(localMaxX, x);
+                    localMaxY = max(localMaxY, y);
+                    localMaxZ = max(localMaxZ, z);
+                }
+            }
+        }
+    }
+   // printf("BEST LOCAL %d\n", localMinX);
+    
+    // atomically update global values
+    atomicMin(&(cuConstIterationParams.minMaxs[0]), (uint32_t)localMinX);
+    atomicMin(&(cuConstIterationParams.minMaxs[1]), (uint32_t)localMinY);
+    atomicMin(&(cuConstIterationParams.minMaxs[2]), (uint32_t)localMinZ);
+    atomicMax(&(cuConstIterationParams.minMaxs[3]), (uint32_t)localMaxX);
+    atomicMax(&(cuConstIterationParams.minMaxs[4]), (uint32_t)localMaxY);
+    atomicMax(&(cuConstIterationParams.minMaxs[5]), (uint32_t)localMaxZ);
+    if (index == 0) {
+        printf("AFTER VAL MIN0: %d\n",(cuConstIterationParams.minMaxs[0]));
+    }
+    
+}
+
 
 
 GolCuda::GolCuda() {
@@ -195,7 +261,9 @@ GolCuda::GolCuda() {
     cube = NULL;
     ruleset = NULL;
     inputData = NULL;
+    minMaxs = NULL;
 
+    cudaDeviceMinMaxs = NULL;
     cudaDeviceInputData = NULL;
     cudaDeviceOutputData = NULL;
     cudaDeviceRuleset = NULL;
@@ -212,10 +280,14 @@ GolCuda::~GolCuda() {
     if (inputData) {
         delete [] inputData;
     }
+    if (minMaxs) {
+        delete [] minMaxs;
+    }
     if (cudaDeviceInputData) {
         cudaCheckError(cudaFree(cudaDeviceRuleset));
         cudaCheckError(cudaFree(cudaDeviceInputData));
         cudaCheckError(cudaFree(cudaDeviceOutputData));
+        cudaCheckError(cudaFree(cudaDeviceMinMaxs));
     }
 }
 
@@ -254,7 +326,7 @@ GolCuda::getCube() {
 
 int
 GolCuda::loadInput(char* file, uint64_t n, char* outputDir) {
-    return loadCubeInput(file, sideLength, ruleset, numStates, isMoore, inputData, n, outputDir);
+    return loadCubeInput(file, sideLength, ruleset, numStates, isMoore, inputData, n, outputDir, minMaxs);
 }
 
 void
@@ -265,9 +337,9 @@ GolCuda::setup() {
     std::string name;
     cudaError_t err = cudaGetDeviceCount(&deviceCount);
 
-    printf("---------------------------------------------------------\n");
-    printf("Initializing CUDA for CudaRenderer\n");
-    printf("Found %d CUDA devices\n", deviceCount);
+    // printf("---------------------------------------------------------\n");
+    // printf("Initializing CUDA for CudaRenderer\n");
+    // printf("Found %d CUDA devices\n", deviceCount);
 
     for (int i=0; i<deviceCount; i++) {
         cudaDeviceProp deviceProps;
@@ -278,12 +350,12 @@ GolCuda::setup() {
             isFastGPU = true;
         }
 
-        printf("Device %d: %s\n", i, deviceProps.name);
-        printf("   SMs:        %d\n", deviceProps.multiProcessorCount);
-        printf("   Global mem: %.0f MB\n", static_cast<float>(deviceProps.totalGlobalMem) / (1024 * 1024));
-        printf("   CUDA Cap:   %d.%d\n", deviceProps.major, deviceProps.minor);
+        // printf("Device %d: %s\n", i, deviceProps.name);
+        // printf("   SMs:        %d\n", deviceProps.multiProcessorCount);
+        // printf("   Global mem: %.0f MB\n", static_cast<float>(deviceProps.totalGlobalMem) / (1024 * 1024));
+        // printf("   CUDA Cap:   %d.%d\n", deviceProps.major, deviceProps.minor);
     }
-    printf("---------------------------------------------------------\n");
+    // printf("---------------------------------------------------------\n");
     if (!isFastGPU)
     {
         printf("WARNING: "
@@ -299,11 +371,13 @@ GolCuda::setup() {
     // See the CUDA Programmer's Guide for descriptions of
     // cudaMalloc and cudaMemcpy
     uint64_t cubeSize = (sideLength * sideLength * sideLength + 7) / 8;
-    std::cout << "Cube size: " << cubeSize << std::endl;
+
+    // std::cout << "Cube size: " << cubeSize << std::endl;
 
     cudaCheckError(cudaMalloc(&cudaDeviceRuleset, sizeof(bool) * 54));
     cudaCheckError(cudaMalloc(&cudaDeviceInputData, sizeof(uint8_t) * cubeSize));
     cudaCheckError(cudaMalloc(&cudaDeviceOutputData, sizeof(uint8_t) * cubeSize));
+    cudaCheckError(cudaMalloc(&cudaDeviceMinMaxs, sizeof(uint32_t) * 6));
 
     /* if (!cudaDeviceInputData || !cudaDeviceOutputData) { */
     /*     std::cerr << "Cuda malloc failed" << std::endl; */
@@ -311,6 +385,8 @@ GolCuda::setup() {
 
     cudaCheckError(cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(bool) * 54, cudaMemcpyHostToDevice));
     cudaCheckError(cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * cubeSize, cudaMemcpyHostToDevice));
+    cudaCheckError(cudaMemcpy(cudaDeviceMinMaxs, minMaxs, sizeof(uint32_t) * 6, cudaMemcpyHostToDevice));
+    
 
     // Initialize parameters in constant memory.  We didn't talk about
     // constant memory in class, but the use of read-only constant
@@ -319,18 +395,39 @@ GolCuda::setup() {
     // for optimizing access to constant memory.  Using global memory
     // here would have worked just as well.  See the Programmer's
     // Guide for more information about constant memory.
-
+    
     GlobalConstants params;
     params.sideLength = sideLength;
     params.isMoore = isMoore;
     params.numStates = numStates;
+    params.minMaxs = cudaDeviceMinMaxs;
     params.inputData = cudaDeviceInputData;
     params.outputData = cudaDeviceOutputData;
     params.ruleset = cudaDeviceRuleset;
     
     cudaCheckError(cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants)));
+    
 }
+void GolCuda::updateBounds() {
+    dim3 blockDim(NUM_SUB_CUBES);
+    dim3 gridDim(1);
 
+    // update minMaxs array to maxs with 0 and mins with n - 1
+    minMaxs[0] = sideLength - 1;
+    minMaxs[1] = sideLength - 1;
+    minMaxs[2] = sideLength - 1;
+    minMaxs[3] = 0;
+    minMaxs[4] = 0;
+    minMaxs[5] = 0;
+    
+    cudaCheckError(cudaMemcpy(cudaDeviceMinMaxs, minMaxs, 6 * sizeof(uint32_t), cudaMemcpyHostToDevice));
+    
+    kernelGetGlobalBounds<<<gridDim, blockDim>>>();
+    
+    cudaCheckError(cudaMemcpy(minMaxs, cudaDeviceMinMaxs, 6 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    printf("mins: %d, %d, %d\n", minMaxs[0], minMaxs[1], minMaxs[2]);
+    printf("maxs: %d, %d, %d\n", minMaxs[3], minMaxs[4], minMaxs[5]);
+}
 
 void 
 GolCuda::advanceFrame() {
@@ -366,3 +463,6 @@ GolCuda::doIteration() {
     }
       
 }  
+
+//TODO: have them in global consts, but first alloc local host var and pass in to 
+//kernel (atomic update this), then back in cpu copy to global consts when done
