@@ -110,6 +110,9 @@ int golSequential(int argc, char** argv, string outputDir)
                                     if (i < sideLength && j < sideLength && k < sideLength) {
                                         if (!(x == i && y == j && z == k)) { //don't include self
                                             numAlive += cube[i][j][k] ? 1 : 0;
+                                            if (x == 0 && y == 4 && z == 2 && cube[i][j][k]) {
+                                                std::cout << "frame " << f + 1 << " I think that " << i << ", " << j << ", " << k << " is alive" << std::endl;
+                                            }
                                         }
                                     }
                                 }

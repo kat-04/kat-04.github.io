@@ -20,7 +20,7 @@
 
 #define BLOCK_SIZE 256
 // Comment for faster runtimes
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define cudaCheckError(ans) cudaAssert((ans), __FILE__, __LINE__);
@@ -127,10 +127,17 @@ __global__ void kernelDoIterationMoore() {
 }
 
 __global__ void kernelDoIterationVonNeumann() {
-    printf("STOP RUNNING VON NEUMANN KATE IT DONT WORK\n");
     uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
     uint64_t n = cuConstIterationParams.sideLength;
     if (index >= (n * n * n + 7) / 8) {
+        return;
+    }
+
+    uint64_t boundedX = 1 + cuConstIterationParams.minMaxs[3] - cuConstIterationParams.minMaxs[0];
+    uint64_t boundedY = 1 + cuConstIterationParams.minMaxs[4] - cuConstIterationParams.minMaxs[1];
+    uint64_t boundedZ = 1 + cuConstIterationParams.minMaxs[5] - cuConstIterationParams.minMaxs[2];
+
+    if (index >= (boundedX * boundedY * boundedZ + 7) / 8) {
         return;
     }
     
@@ -143,9 +150,12 @@ __global__ void kernelDoIterationVonNeumann() {
     int status;
 
     for (int bit = 0; bit < 8; bit++) {
-        uint64_t z = ((bitIndex + bit) / (n * n)) % n;
-        uint64_t y = ((bitIndex + bit) / n) % n;
-        uint64_t x = (bitIndex + bit) % n;
+        if (bitIndex + bit >= boundedX * boundedY * boundedZ) {
+            break;
+        }
+        uint64_t x = (((bitIndex + bit) % boundedX) + cuConstIterationParams.minMaxs[0]);
+        uint64_t y = (((bitIndex + bit ) / boundedX) % boundedY) + cuConstIterationParams.minMaxs[1];
+        uint64_t z = (((bitIndex + bit ) / (boundedX * boundedY)) % boundedZ) + cuConstIterationParams.minMaxs[2];
 
         neighborBitIndex = (z * n * n) + (y * n) + x - 1;
         neighborLinIndex = neighborBitIndex / 8;
@@ -177,21 +187,22 @@ __global__ void kernelDoIterationVonNeumann() {
         neighborBit = neighborBitIndex % 8;
         if (z + 1 < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
 
-        // printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, *(int*)&cuConstIterationParams.inputData[index]);
-        if ((cuConstIterationParams.inputData[index] >> (7 - bit)) & mask) {
+        uint64_t shiftedLinIndex = (z * n * n + y * n + x) / 8;
+        uint64_t shiftedBit = (z * n * n + y * n + x) % 8;
+        if ((cuConstIterationParams.inputData[index] >> (7 - shiftedBit)) & mask) {
             // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
             status = cuConstIterationParams.ruleset[27 + numAlive] ? 1 : 0;
             if (status) {
                 // alive
-                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - shiftedBit));
             } else {
                 // dead
-                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] & ~(1 << (7 - bit));
+                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] & ~(1 << (7 - shiftedBit));
             }
         } else {
             // printf("x: %d, y: %d, z: %d is dead rn \n");
             status = cuConstIterationParams.ruleset[numAlive] ? 1 : 0;
-            cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+            cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - shiftedBit));
         }
 
         numAlive = 0;
@@ -204,7 +215,6 @@ __global__ void kernelGetGlobalBounds() {
     if (index >= n) {
         return;
     } 
-
     uint64_t localMinX = n - 1;
     uint64_t localMinY = n - 1;
     uint64_t localMinZ = n - 1;
@@ -230,9 +240,9 @@ __global__ void kernelGetGlobalBounds() {
             uint8_t alive = ((cuConstIterationParams.inputData[linIndex] >> (7 - bit))) & mask;
             if (alive) {
                 // update local values
-                localMinX = min(localMinX, index - 1);
-                localMinY = min(localMinY, y - 1);
-                localMinZ = min(localMinZ, z - 1);
+                localMinX = min(localMinX, (index == 0) ? (uint64_t)0 : index - 1);
+                localMinY = min(localMinY, (y == 0) ? (uint64_t)0 : y - 1);
+                localMinZ = min(localMinZ, (z == 0) ? (uint64_t)0 : z - 1);
                 localMaxX = min(max(localMaxX, index + 1), n - 1);
                 localMaxY = min(max(localMaxY, y + 1), n - 1);
                 localMaxZ = min(max(localMaxZ, z + 1), n - 1);
@@ -409,7 +419,8 @@ GolCuda::setup() {
 void GolCuda::updateBounds() {
     dim3 blockDim(sideLength);
     dim3 gridDim(1);
-
+    printf("before mins: %d, %d, %d\n", minMaxs[0], minMaxs[1], minMaxs[2]);
+    printf("before maxs: %d, %d, %d\n", minMaxs[3], minMaxs[4], minMaxs[5]);
     // update minMaxs array to maxs with 0 and mins with n - 1
     minMaxs[0] = sideLength - 1;
     minMaxs[1] = sideLength - 1;
@@ -423,8 +434,8 @@ void GolCuda::updateBounds() {
     kernelGetGlobalBounds<<<gridDim, blockDim>>>();
     
     cudaCheckError(cudaMemcpy(minMaxs, cudaDeviceMinMaxs, 6 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
-    // printf("mins: %d, %d, %d\n", minMaxs[0], minMaxs[1], minMaxs[2]);
-    // printf("maxs: %d, %d, %d\n", minMaxs[3], minMaxs[4], minMaxs[5]);
+    printf("mins: %d, %d, %d\n", minMaxs[0], minMaxs[1], minMaxs[2]);
+    printf("maxs: %d, %d, %d\n", minMaxs[3], minMaxs[4], minMaxs[5]);
 }
 
 void 

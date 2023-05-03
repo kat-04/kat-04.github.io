@@ -43,6 +43,7 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
     //time start
     for (int f = 0; f < numFrames; f++) {
         Timer frameTimer;
+        std::cout << std::endl << "FRAME " << f + 1 << std::endl;
         golCuda->updateBounds();
         golCuda->doIteration();
         totalSimulationTime += frameTimer.elapsed();
