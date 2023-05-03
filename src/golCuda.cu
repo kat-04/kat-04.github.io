@@ -57,59 +57,70 @@ __global__ void kernelDoIterationMoore() {
     if (index >= (n * n * n + 7) / 8) {
         return;
     }
+    uint64_t boundedX = 1 + cuConstIterationParams.minMaxs[3] - cuConstIterationParams.minMaxs[0];
+    uint64_t boundedY = 1 + cuConstIterationParams.minMaxs[4] - cuConstIterationParams.minMaxs[1];
+    uint64_t boundedZ = 1 + cuConstIterationParams.minMaxs[5] - cuConstIterationParams.minMaxs[2];
 
-    /* printf("Thread idx: %d\n", index); */
-    
+    if (index >= (boundedX * boundedY * boundedZ + 7) / 8) {
+        return;
+    }
+
     // index of the first thing in the bit array
-    uint64_t bitIndex = index;
-    /* printf("Bit idx: %d\n", bitIndex); */
+    uint64_t bitIndex = 8 * index;
     uint64_t neighborBitIndex;
     uint64_t neighborLinIndex;
     int neighborBit;
     uint8_t mask = 1;
     int numAlive = 0;
     int status;
-    uint64_t boundedX = cuConstIterationParams.minMaxs[3] - cuConstIterationParams.minMaxs[0];
-    uint64_t boundedY = cuConstIterationParams.minMaxs[4] - cuConstIterationParams.minMaxs[1];
-    uint64_t boundedZ = cuConstIterationParams.minMaxs[5] - cuConstIterationParams.minMaxs[2];
-    // printf("doin index %d, x: %d, y: %d, z: %d\n", index, x, y, z);
+    
+    //printf("bounds: %lu, %lu, %lu\n", boundedX, boundedY, boundedZ);
     for (int bit = 0; bit < 8; bit++) {
+        if (bitIndex + bit >= boundedX * boundedY * boundedZ) {
+            break;
+        }
         uint64_t x = (((bitIndex + bit) % boundedX) + cuConstIterationParams.minMaxs[0]);
         uint64_t y = (((bitIndex + bit ) / boundedX) % boundedY) + cuConstIterationParams.minMaxs[1];
         uint64_t z = (((bitIndex + bit ) / (boundedX * boundedY)) % boundedZ) + cuConstIterationParams.minMaxs[2];
+        //printf("doin index %lu, x: %lu, y: %lu, z: %lu\n", index, x, y, z);
+
         for (uint64_t i = (x == 0) ? 0 : x - 1; i <= x + 1; i++) {
             for (uint64_t j = (y == 0) ? 0 : y - 1; j <= y + 1; j++) {
                 for (uint64_t k = (z == 0) ? 0 : z - 1; k <= z + 1; k++) {
                     if (i < n && j < n && k < n) {
                         if (!(x == i && y == j && z == k)) { //don't include self
                             neighborBitIndex = (k * n * n) + (j * n) + i;
+                            
                             neighborLinIndex = neighborBitIndex / 8;
                             neighborBit = neighborBitIndex % 8;
+                            //printf("index bit %lu has neighbor bit idx %lu\n", index, neighborLinIndex);
                             numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
                         }
                     }
                 }
             }
         }
-        /* printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, numAlive); */
+        //printf("idx: %lu, x: %lu, y: %lu, z: %lu has value: %d \n", index, x, y, z, numAlive);
         /* printf("Helloooo\n"); */
-        uint64_t shiftedLinIndex = z * n * n + y * n + x;
-        if ((cuConstIterationParams.inputData[shiftedLinIndex] >> (7 - bit)) & mask) {
+        uint64_t shiftedLinIndex = (z * n * n + y * n + x) / 8;
+        uint64_t shiftedBit = (z * n * n + y * n + x) % 8;
+        //printf("x: %lu, y: %lu,, z: %lu,  shiftedLinIndex: %lu, shiftedBit: %lu\n", x, y, z, shiftedLinIndex, shiftedBit);
+        if ((cuConstIterationParams.inputData[shiftedLinIndex] >> (7 - shiftedBit)) & mask) {
             // OLD STATE IS ALIVE
             /* printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive); */
             status = cuConstIterationParams.ruleset[27 + numAlive] ? 1 : 0;
             if (status) {
                 // alive
-                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - bit));
+                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - shiftedBit));
             } else {
                 // dead
-                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] & ~(1 << (7 - bit));
+                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] & ~(1 << (7 - shiftedBit));
             }
         } else {
             // OLD STATE IS DEAD
             /* printf("x: %d, y: %d, z: %d is dead rn \n", x, y, z); */
             status = cuConstIterationParams.ruleset[numAlive] ? 1 : 0;
-            cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - bit));
+            cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - shiftedBit));
         }
         numAlive = 0;
     }
@@ -219,12 +230,12 @@ __global__ void kernelGetGlobalBounds() {
             uint8_t alive = ((cuConstIterationParams.inputData[linIndex] >> (7 - bit))) & mask;
             if (alive) {
                 // update local values
-                localMinX = min(localMinX, index);
-                localMinY = min(localMinY, y);
-                localMinZ = min(localMinZ, z);
-                localMaxX = max(localMaxX, index);
-                localMaxY = max(localMaxY, y);
-                localMaxZ = max(localMaxZ, z);
+                localMinX = min(localMinX, index - 1);
+                localMinY = min(localMinY, y - 1);
+                localMinZ = min(localMinZ, z - 1);
+                localMaxX = min(max(localMaxX, index + 1), n - 1);
+                localMaxY = min(max(localMaxY, y + 1), n - 1);
+                localMaxZ = min(max(localMaxZ, z + 1), n - 1);
             }
         }
     }
@@ -430,10 +441,9 @@ GolCuda::advanceFrame() {
 void
 GolCuda::doIteration() {    
     
-    uint64_t inBoundsVolume = (minMaxs[3] - minMaxs[0]) * (minMaxs[4] - minMaxs[1]) * (minMaxs[5] - minMaxs[2]);
+    uint64_t inBoundsVolume = (1 + minMaxs[3] - minMaxs[0]) * (1 + minMaxs[4] - minMaxs[1]) * (1 + minMaxs[5] - minMaxs[2]);
     dim3 blockDim(BLOCK_SIZE);
     dim3 gridDim((((inBoundsVolume + 7) / 8) + blockDim.x - 1) / blockDim.x);
-
     if (isMoore) {
         kernelDoIterationMoore<<<gridDim, blockDim>>>(); 
     } else {
