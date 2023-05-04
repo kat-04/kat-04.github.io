@@ -3,6 +3,7 @@
 
 #include <chrono>
 
+// used for timing the different implementations
 class Timer {
 public:
   Timer() : beg_(clock_::now()) {}

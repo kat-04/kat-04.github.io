@@ -28,7 +28,9 @@ vector<string> tokenizeLine(string &line, const char* delim) {
 }
 
 
-
+//RULE FORMAT: survival/birth/numStates/isMoore
+//MAP FORMAT: keys 0-26 -> birth for that num neighbors,
+//            keys 27-54 -> survival for that num neighbors
 tuple<map<int, bool>, bool, int> parseRules(string line) {
     const char* slashDelim = "/";
     const char* commaDelim = ",";

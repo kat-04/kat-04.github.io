@@ -1,4 +1,3 @@
-// Sequential version of 3D gol
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -8,20 +7,16 @@
 #include <vector>
 #include <tuple>
 #include <fstream>
-#include <iostream> //for cout
+#include <iostream>
 #include "timing.h"
 #include "gol-sequential.h"
 #include "parse.h"
 
-//RULE FORMAT: survival/birth/numStates/isMoore
-//MAP FORMAT: keys 0-26 -> birth for that num neighbors,
-//            keys 27-54 -> survival for that num neighbors
-
 using namespace std; 
 
+// performs the entire sequential game of life algorithm
 int golSequential(int argc, char** argv, string outputDir)
 {
-    //TODO: timing code (output to log and/or print)
     string inputFile = argv[1];
     int numFrames = stoi(argv[2]);
     uint64_t sideLength = stoi(argv[3]);
@@ -73,7 +68,6 @@ int golSequential(int argc, char** argv, string outputDir)
         } else {
             //set voxel to on
             coords = tokenizeLine(line, spaceDelim);
-            //TODO: should probably check for out of bounds input here and error
             cube[stoi(coords[0])][stoi(coords[1])][stoi(coords[2])] = true;
             outputInit << coords[0] << " " << coords[1] << " " << coords[2] << endl;
         }
@@ -92,10 +86,10 @@ int golSequential(int argc, char** argv, string outputDir)
         frameOutputFile = outputPath + to_string(f+1) + ".txt";
         ofstream output; 
         output.open(frameOutputFile);
-        //output << sideLength << endl;
         //timer start
         double frameTime = 0.0;
         Timer frameTimer;
+
         //Loop through all voxels
         for (uint64_t x = 0; x < sideLength; x++) {
             for (uint64_t y = 0; y < sideLength; y++) {
@@ -104,15 +98,13 @@ int golSequential(int argc, char** argv, string outputDir)
                     frameTimer.reset();
                     numAlive = 0;
                     if (isMoore) {
+                        // moore neighborhood
                         for (uint64_t i = (x == 0) ? 0 : x - 1; i <= x + 1; i++) {
                             for (uint64_t j = (y == 0) ? 0 : y - 1; j <= y + 1; j++) {
                                 for (uint64_t k = (z == 0) ? 0 : z - 1; k <= z + 1; k++) {
                                     if (i < sideLength && j < sideLength && k < sideLength) {
                                         if (!(x == i && y == j && z == k)) { //don't include self
                                             numAlive += cube[i][j][k] ? 1 : 0;
-                                            if (x == 0 && y == 4 && z == 2 && cube[i][j][k]) {
-                                                std::cout << "frame " << f + 1 << " I think that " << i << ", " << j << ", " << k << " is alive" << std::endl;
-                                            }
                                         }
                                     }
                                 }
@@ -130,14 +122,13 @@ int golSequential(int argc, char** argv, string outputDir)
 
                     //update voxel based on rules
                     voxelStatus = ruleMap[(cube[x][y][z] ? 27 : 0) + numAlive];
-                    newCube[x][y][z] = voxelStatus;  
+                    newCube[x][y][z] = voxelStatus; 
+
                     //output for frame if on
                     frameTime += frameTimer.elapsed();
                     if (voxelStatus) {
                         output << x << " " << y << " " << z << endl;
-                    }
-                    
-                    //printVoxel(x, y, z, cube[x][y][z]);              
+                    }           
                 }
             }
         }

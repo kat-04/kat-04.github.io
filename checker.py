@@ -4,6 +4,8 @@ import os
 import re
 import difflib
 
+# compares parallel output for a given configuration and version to the sequential output
+# ensures correctness on large test cases as we have ensured sequential correctness through manual testing
 def main():
     os.system("rm -rf /tmp/output-files/")
     os.system("mkdir /tmp/output-files/")
@@ -23,6 +25,7 @@ def main():
     numFrames = args[2]
     sideLen = args[3]
 
+    # run the sequential and parallel versions 
     cmdSeq = f'./GOL3D {testCase} {numFrames} {sideLen} seq check'
     print(cmdSeq)
     seqRet = os.system(cmdSeq)
@@ -31,8 +34,6 @@ def main():
     cmdPar = f'./GOL3D {testCase} {numFrames} {sideLen} {version} check'
     parRet = os.system(cmdPar)
     assert parRet == 0, 'ERROR -- par GOL exited with errors'
-
-    # seq output already sorted first by x, then y, then z
 
     # sort par output for each frame and compare
     for i in range(1, int(numFrames) + 1):
@@ -57,6 +58,8 @@ def main():
         diffLines = []
         for line in diff:
             diffLines.append(line)
+
+        # if a difference between the files is detected 
         if (len(diffLines) > 0):
             errorFlag = True
             log = open(f'/tmp/output-files/logs/frame{i}.txt', "w")

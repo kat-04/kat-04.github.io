@@ -5,6 +5,7 @@
 #include "gol-openmp.h" 
 /* #include "gol-openmp-states.h" */
 
+// runs game of life for parsed arguments on local computer
 int main(int argc, char** argv)
 {
     // clean output files

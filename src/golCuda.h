@@ -28,21 +28,29 @@ public:
     GolCuda();
     virtual ~GolCuda();
 
+    // get the output cube
     Cube* getCube();
 
+    // do Cuda-related setup
     void setup();
 
+    // load input into Cuda memory
     int loadInput(char* file, uint64_t n, char* outputDir);
 
+    // allocate memory for the output cube
     void allocOutputCube(uint64_t sideLength);
 
+    // clear the output cube data
     void clearOutputCube();
 
+    // update the bounding box min/max values
     void updateBounds();
 
+    // move output to input to prepare for the next frame
     void advanceFrame();
 
-    void doIteration();
+    // do one iteration of game of life
+    void doIteration(bool doBoundingBox);
 
 };
 

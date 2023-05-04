@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <ostream>
 
+// creates the Vec3 type
 struct Vec3 {
     uint32_t x;
     uint32_t y;
