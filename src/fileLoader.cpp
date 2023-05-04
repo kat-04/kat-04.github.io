@@ -15,17 +15,21 @@
 #include "fileLoader.h"
 #include "cube.h"
 
-
+// load in data used for the Cuda implementation
 int loadCubeInput(char* file, uint64_t& sideLength, bool*& ruleset, int& numStates, bool& isMoore,
-                  uint8_t*& inputData, uint64_t n, char* outputPath) {
+                  uint8_t*& inputData, uint64_t n, char* outputPath, uint32_t*& minMaxs) {
     std::fstream input;
-    input.open(file, std::ios::in);
     std::string line;
-    uint64_t curLine = 0;
     std::vector<std::string> coords;
+    input.open(file, std::ios::in);
+    
+    uint64_t curLine = 0;
     const char* spaceDelim = " ";
+
     inputData = new uint8_t[(n*n*n + 7) / 8];
-    memset(inputData, 0, sizeof(inputData));
+    memset(inputData, 0, sizeof(uint8_t) * (n*n*n + 7) / 8);
+    minMaxs = new uint32_t[6];
+    sideLength = n;
 
     //write frame0 to be same status as input (updates start at frame1)
     std::string outputDir = outputPath;
@@ -51,8 +55,6 @@ int loadCubeInput(char* file, uint64_t& sideLength, bool*& ruleset, int& numStat
         } else {
             //set voxel to on
             coords = tokenizeLine(line, spaceDelim);
-            //TODO: should probably check for out of bounds input here and error
-            //TODO: parse input cell's state when this is implemented and replace auto set state to 1
             linearIndex = (stoi(coords[0]) + (n * stoi(coords[1])) + (n * n * stoi(coords[2]))) / 8;
             bit = (stoi(coords[0]) + (n * stoi(coords[1])) + (n * n * stoi(coords[2]))) % 8;
             mask = 1 << (7 - bit);
@@ -65,6 +67,5 @@ int loadCubeInput(char* file, uint64_t& sideLength, bool*& ruleset, int& numStat
     input.close();
     outputInit.close();
 
-    sideLength = n;
     return 0;
 }

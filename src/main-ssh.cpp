@@ -4,6 +4,7 @@
 #include "gol-cuda.cpp"
 #include "gol-openmp.h"
 
+// runs game of life for parsed arguments on ghc machines
 int main(int argc, char** argv)
 {
     std::string outputDir = "/tmp/output-files";

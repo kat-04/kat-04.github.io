@@ -1,6 +1,3 @@
-//do stuff for global constants up top
-
-
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <driver_functions.h>
@@ -19,9 +16,8 @@
 #include "golCuda.h"
 
 #define BLOCK_SIZE 256
-
-// Uncomment for faster runtimes
-#define DEBUG
+// Comment for faster runtimes
+//#define DEBUG
 
 #ifdef DEBUG
 #define cudaCheckError(ans) cudaAssert((ans), __FILE__, __LINE__);
@@ -42,84 +38,124 @@ struct GlobalConstants {
     uint64_t sideLength;
     bool isMoore;
     int numStates;
+
     bool* ruleset;
+    uint32_t* minMaxs;
+
     uint8_t* inputData;
     uint8_t* outputData;
 };
 
 __constant__ GlobalConstants cuConstIterationParams;
 
-__global__ void kernelDoIterationMoore() {
+// do an iteration of the algorithm with Moore neighborhoods 
+// each kernel call does one int's voxels (so 8 as each bit stores a state)
+__global__ void kernelDoIterationMoore(bool doBoundingBox) {
     uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
     uint64_t n = cuConstIterationParams.sideLength;
+    uint64_t boundedX;
+    uint64_t boundedY;
+    uint64_t boundedZ;
     if (index >= (n * n * n + 7) / 8) {
         return;
     }
-    /* printf("Thread idx: %d\n", index); */
-    
+
+    // get bounding box size
+    if (doBoundingBox) {
+        boundedX = 1 + cuConstIterationParams.minMaxs[3] - cuConstIterationParams.minMaxs[0];
+        boundedY = 1 + cuConstIterationParams.minMaxs[4] - cuConstIterationParams.minMaxs[1];
+        boundedZ = 1 + cuConstIterationParams.minMaxs[5] - cuConstIterationParams.minMaxs[2]; 
+        if (index >= (boundedX * boundedY * boundedZ + 7) / 8) {
+            return;
+        }   
+    }    
+
     // index of the first thing in the bit array
-    uint64_t bitIndex = index * 8;
-    /* printf("Bit idx: %d\n", bitIndex); */
+    uint64_t bitIndex = 8 * index;
     uint64_t neighborBitIndex;
     uint64_t neighborLinIndex;
     int neighborBit;
     uint8_t mask = 1;
     int numAlive = 0;
     int status;
-    // printf("doin index %d, x: %d, y: %d, z: %d\n", index, x, y, z);
+    
+    // for each bit in the current int
     for (int bit = 0; bit < 8; bit++) {
-        /* printf("Bit idx: %d\n", bitIndex + bit); */
-        uint64_t z = ((bitIndex + bit) / (n * n)) % n;
-        uint64_t y = ((bitIndex + bit) / n) % n;
-        uint64_t x = (bitIndex + bit) % n;
-        /* printf("x: %d, y: %d, z: %d\n", x, y, z); */
+        if (doBoundingBox && bitIndex + bit >= boundedX * boundedY * boundedZ) {
+            break;
+        }
+        uint64_t x;
+        uint64_t y;
+        uint64_t z;
+        if (doBoundingBox) {
+            // get shifted bounds based on global min/max
+            x = (((bitIndex + bit) % boundedX) + cuConstIterationParams.minMaxs[0]);
+            y = (((bitIndex + bit ) / boundedX) % boundedY) + cuConstIterationParams.minMaxs[1];
+            z = (((bitIndex + bit ) / (boundedX * boundedY)) % boundedZ) + cuConstIterationParams.minMaxs[2];
+        } else {
+            x = (((bitIndex + bit) % n));
+            y = (((bitIndex + bit ) / n) % n);
+            z = (((bitIndex + bit ) / (n * n)) % n);
+        }
+        
         for (uint64_t i = (x == 0) ? 0 : x - 1; i <= x + 1; i++) {
             for (uint64_t j = (y == 0) ? 0 : y - 1; j <= y + 1; j++) {
                 for (uint64_t k = (z == 0) ? 0 : z - 1; k <= z + 1; k++) {
-                    /* printf("Hello from index %d and bit %d\n", index, bit); */
                     if (i < n && j < n && k < n) {
                         if (!(x == i && y == j && z == k)) { //don't include self
                             neighborBitIndex = (k * n * n) + (j * n) + i;
                             neighborLinIndex = neighborBitIndex / 8;
                             neighborBit = neighborBitIndex % 8;
-                            /* if (index == 3 && bit == 0) { */
-                            /*     printf("i: %d, j: %d, k: %d\n", i, j, k); */
-                            /* } */
+
                             numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
                         }
                     }
                 }
             }
         }
-        /* printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, numAlive); */
-        /* printf("Helloooo\n"); */
-        if ((cuConstIterationParams.inputData[index] >> (7 - bit)) & mask) {
-            // OLD STATE IS ALIVE
-            /* printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive); */
+        uint64_t shiftedLinIndex = (z * n * n + y * n + x) / 8;
+        uint64_t shiftedBit = (z * n * n + y * n + x) % 8;
+        if ((cuConstIterationParams.inputData[shiftedLinIndex] >> (7 - shiftedBit)) & mask) {
+            // voxel was previously alive
             status = cuConstIterationParams.ruleset[27 + numAlive] ? 1 : 0;
             if (status) {
-                // alive
-                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+                // stays alive
+                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - shiftedBit));
             } else {
-                // dead
-                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] & ~(1 << (7 - bit));
+                // now dead
+                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] & ~(1 << (7 - shiftedBit));
             }
         } else {
-            // OLD STATE IS DEAD
-            /* printf("x: %d, y: %d, z: %d is dead rn \n", x, y, z); */
+            // voxel was previously dead
             status = cuConstIterationParams.ruleset[numAlive] ? 1 : 0;
-            cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+            cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - shiftedBit));
         }
         numAlive = 0;
     }
 }
 
-__global__ void kernelDoIterationVonNeumann() {
+// do an iteration of the algorithm with Von Neumann neighborhoods 
+// each kernel call does one int's voxels (so 8 as each bit stores a state)
+__global__ void kernelDoIterationVonNeumann(bool doBoundingBox) {
     uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
     uint64_t n = cuConstIterationParams.sideLength;
     if (index >= (n * n * n + 7) / 8) {
         return;
     }
+
+    uint64_t boundedX;
+    uint64_t boundedY;
+    uint64_t boundedZ;
+
+    // get bounding box size
+    if (doBoundingBox) {
+        boundedX = 1 + cuConstIterationParams.minMaxs[3] - cuConstIterationParams.minMaxs[0];
+        boundedY = 1 + cuConstIterationParams.minMaxs[4] - cuConstIterationParams.minMaxs[1];
+        boundedZ = 1 + cuConstIterationParams.minMaxs[5] - cuConstIterationParams.minMaxs[2]; 
+        if (index >= (boundedX * boundedY * boundedZ + 7) / 8) {
+            return;
+        }   
+    }  
     
     uint64_t bitIndex = index * 8;
     uint64_t neighborBitIndex;
@@ -130,9 +166,23 @@ __global__ void kernelDoIterationVonNeumann() {
     int status;
 
     for (int bit = 0; bit < 8; bit++) {
-        uint64_t z = ((bitIndex + bit) / (n * n)) % n;
-        uint64_t y = ((bitIndex + bit) / n) % n;
-        uint64_t x = (bitIndex + bit) % n;
+        if (doBoundingBox && bitIndex + bit >= boundedX * boundedY * boundedZ) {
+            break;
+        }
+        uint64_t x;
+        uint64_t y;
+        uint64_t z;
+
+        if (doBoundingBox) {
+            // get shifted bounds based on global min/max
+            x = (((bitIndex + bit) % boundedX) + cuConstIterationParams.minMaxs[0]);
+            y = (((bitIndex + bit ) / boundedX) % boundedY) + cuConstIterationParams.minMaxs[1];
+            z = (((bitIndex + bit ) / (boundedX * boundedY)) % boundedZ) + cuConstIterationParams.minMaxs[2];
+        } else {
+            x = (((bitIndex + bit) % n));
+            y = (((bitIndex + bit ) / n) % n);
+            z = (((bitIndex + bit ) / (n * n)) % n);
+        }
 
         neighborBitIndex = (z * n * n) + (y * n) + x - 1;
         neighborLinIndex = neighborBitIndex / 8;
@@ -164,25 +214,77 @@ __global__ void kernelDoIterationVonNeumann() {
         neighborBit = neighborBitIndex % 8;
         if (z + 1 < n) numAlive += (cuConstIterationParams.inputData[neighborLinIndex] >> (7 - neighborBit)) & mask;
 
-        // printf("x: %d, y: %d, z: %d has value: %d \n", x, y, z, *(int*)&cuConstIterationParams.inputData[index]);
-        if ((cuConstIterationParams.inputData[index] >> (7 - bit)) & mask) {
-            // printf("x: %d, y: %d, z: %d is alive rn with %d neighbors \n", x, y, z, numAlive);
+        uint64_t shiftedLinIndex = (z * n * n + y * n + x) / 8;
+        uint64_t shiftedBit = (z * n * n + y * n + x) % 8;
+        if ((cuConstIterationParams.inputData[shiftedLinIndex] >> (7 - shiftedBit)) & mask) {
             status = cuConstIterationParams.ruleset[27 + numAlive] ? 1 : 0;
             if (status) {
                 // alive
-                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - shiftedBit));
             } else {
                 // dead
-                cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] & ~(1 << (7 - bit));
+                cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] & ~(1 << (7 - shiftedBit));
             }
         } else {
-            // printf("x: %d, y: %d, z: %d is dead rn \n");
             status = cuConstIterationParams.ruleset[numAlive] ? 1 : 0;
-            cuConstIterationParams.outputData[index] = cuConstIterationParams.outputData[index] | (status << (7 - bit));
+            cuConstIterationParams.outputData[shiftedLinIndex] = cuConstIterationParams.outputData[shiftedLinIndex] | (status << (7 - shiftedBit));
         }
 
         numAlive = 0;
     }
+}
+
+// get the new global bounds of the alive voxels
+__global__ void kernelGetGlobalBounds() {
+    uint64_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t n = cuConstIterationParams.sideLength;
+    if (index >= n) {
+        return;
+    }
+    
+    // first get local min/max values for this kernel call
+    uint64_t localMinX = n - 1;
+    uint64_t localMinY = n - 1;
+    uint64_t localMinZ = n - 1;
+    uint64_t localMaxX = 0;
+    uint64_t localMaxY = 0;
+    uint64_t localMaxZ = 0;
+
+    uint64_t bit_index;
+    // Bit and index in array of neighbor
+    uint64_t linIndex;
+    uint8_t bit;
+    for (uint64_t y = 0; y < n; y++) {
+        for (uint64_t z = 0; z < n; z++) {
+            if (y >= n || z >= n) {
+                continue;
+            }
+
+            bit_index = index + y * n + z * n * n;
+            linIndex = bit_index / 8;
+            bit = bit_index % 8;
+
+            uint8_t mask = 1;
+            uint8_t alive = ((cuConstIterationParams.inputData[linIndex] >> (7 - bit))) & mask;
+            if (alive) {
+                // update local values
+                localMinX = min(localMinX, (index == 0) ? (uint64_t)0 : index - 1);
+                localMinY = min(localMinY, (y == 0) ? (uint64_t)0 : y - 1);
+                localMinZ = min(localMinZ, (z == 0) ? (uint64_t)0 : z - 1);
+                localMaxX = min(max(localMaxX, index + 1), n - 1);
+                localMaxY = min(max(localMaxY, y + 1), n - 1);
+                localMaxZ = min(max(localMaxZ, z + 1), n - 1);
+            }
+        }
+    }
+    
+    // atomically update global values with best local values
+    atomicMin(&(cuConstIterationParams.minMaxs[0]), (uint32_t)localMinX);
+    atomicMin(&(cuConstIterationParams.minMaxs[1]), (uint32_t)localMinY);
+    atomicMin(&(cuConstIterationParams.minMaxs[2]), (uint32_t)localMinZ);
+    atomicMax(&(cuConstIterationParams.minMaxs[3]), (uint32_t)localMaxX);
+    atomicMax(&(cuConstIterationParams.minMaxs[4]), (uint32_t)localMaxY);
+    atomicMax(&(cuConstIterationParams.minMaxs[5]), (uint32_t)localMaxZ);    
 }
 
 
@@ -195,7 +297,9 @@ GolCuda::GolCuda() {
     cube = NULL;
     ruleset = NULL;
     inputData = NULL;
+    minMaxs = NULL;
 
+    cudaDeviceMinMaxs = NULL;
     cudaDeviceInputData = NULL;
     cudaDeviceOutputData = NULL;
     cudaDeviceRuleset = NULL;
@@ -212,10 +316,14 @@ GolCuda::~GolCuda() {
     if (inputData) {
         delete [] inputData;
     }
+    if (minMaxs) {
+        delete [] minMaxs;
+    }
     if (cudaDeviceInputData) {
         cudaCheckError(cudaFree(cudaDeviceRuleset));
         cudaCheckError(cudaFree(cudaDeviceInputData));
         cudaCheckError(cudaFree(cudaDeviceOutputData));
+        cudaCheckError(cudaFree(cudaDeviceMinMaxs));
     }
 }
 
@@ -226,8 +334,6 @@ GolCuda::clearOutputCube() {
 
 void
 GolCuda::allocOutputCube(uint64_t sideLength) {
-    /* printf("%lu\n", (sideLength * sideLength * sideLength + 7)); */
-    /* printf("Side length: %d\n", sideLength); */
     printf("Size of data: %f MB\n", sizeof(uint8_t) * (((sideLength * sideLength * sideLength + 7) / 8) / (1024.f * 1024.f)));
     if (cube) delete cube;
     cube = new Cube(sideLength);
@@ -239,22 +345,17 @@ GolCuda::allocOutputCube(uint64_t sideLength) {
 Cube*
 GolCuda::getCube() {
 
-    // Need to copy contents of the rendered image from device memory
-    // before we expose the Image object to the caller
-
-    //printf("Copying image data from device\n");
-
+    // copy over result from device
     cudaCheckError(cudaMemcpy(cube->data,
                cudaDeviceOutputData,
                sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8),
                cudaMemcpyDeviceToHost));
-    
     return cube;
 }
 
 int
 GolCuda::loadInput(char* file, uint64_t n, char* outputDir) {
-    return loadCubeInput(file, sideLength, ruleset, numStates, isMoore, inputData, n, outputDir);
+    return loadCubeInput(file, sideLength, ruleset, numStates, isMoore, inputData, n, outputDir, minMaxs);
 }
 
 void
@@ -265,10 +366,6 @@ GolCuda::setup() {
     std::string name;
     cudaError_t err = cudaGetDeviceCount(&deviceCount);
 
-    printf("---------------------------------------------------------\n");
-    printf("Initializing CUDA for CudaRenderer\n");
-    printf("Found %d CUDA devices\n", deviceCount);
-
     for (int i=0; i<deviceCount; i++) {
         cudaDeviceProp deviceProps;
         cudaGetDeviceProperties(&deviceProps, i);
@@ -277,13 +374,7 @@ GolCuda::setup() {
         {
             isFastGPU = true;
         }
-
-        printf("Device %d: %s\n", i, deviceProps.name);
-        printf("   SMs:        %d\n", deviceProps.multiProcessorCount);
-        printf("   Global mem: %.0f MB\n", static_cast<float>(deviceProps.totalGlobalMem) / (1024 * 1024));
-        printf("   CUDA Cap:   %d.%d\n", deviceProps.major, deviceProps.minor);
     }
-    printf("---------------------------------------------------------\n");
     if (!isFastGPU)
     {
         printf("WARNING: "
@@ -292,77 +383,75 @@ GolCuda::setup() {
         printf("---------------------------------------------------------\n");
     }
     
-    // By this time the scene should be loaded.  Now copy all the key
-    // data structures into device memory so they are accessible to
-    // CUDA kernels
-    //
-    // See the CUDA Programmer's Guide for descriptions of
-    // cudaMalloc and cudaMemcpy
     uint64_t cubeSize = (sideLength * sideLength * sideLength + 7) / 8;
-    std::cout << "Cube size: " << cubeSize << std::endl;
 
     cudaCheckError(cudaMalloc(&cudaDeviceRuleset, sizeof(bool) * 54));
     cudaCheckError(cudaMalloc(&cudaDeviceInputData, sizeof(uint8_t) * cubeSize));
     cudaCheckError(cudaMalloc(&cudaDeviceOutputData, sizeof(uint8_t) * cubeSize));
-
-    /* if (!cudaDeviceInputData || !cudaDeviceOutputData) { */
-    /*     std::cerr << "Cuda malloc failed" << std::endl; */
-    /* } */
+    cudaCheckError(cudaMalloc(&cudaDeviceMinMaxs, sizeof(uint32_t) * 6));
 
     cudaCheckError(cudaMemcpy(cudaDeviceRuleset, ruleset, sizeof(bool) * 54, cudaMemcpyHostToDevice));
     cudaCheckError(cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * cubeSize, cudaMemcpyHostToDevice));
+    cudaCheckError(cudaMemcpy(cudaDeviceMinMaxs, minMaxs, sizeof(uint32_t) * 6, cudaMemcpyHostToDevice));
+    
 
-    // Initialize parameters in constant memory.  We didn't talk about
-    // constant memory in class, but the use of read-only constant
-    // memory here is an optimization over just sticking these values
-    // in device global memory.  NVIDIA GPUs have a few special tricks
-    // for optimizing access to constant memory.  Using global memory
-    // here would have worked just as well.  See the Programmer's
-    // Guide for more information about constant memory.
-
+    // Initialize parameters in constant memory
     GlobalConstants params;
     params.sideLength = sideLength;
     params.isMoore = isMoore;
     params.numStates = numStates;
+    params.minMaxs = cudaDeviceMinMaxs;
     params.inputData = cudaDeviceInputData;
     params.outputData = cudaDeviceOutputData;
     params.ruleset = cudaDeviceRuleset;
     
     cudaCheckError(cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants)));
+    
 }
+void GolCuda::updateBounds() {
+    dim3 blockDim(sideLength);
+    dim3 gridDim(1);
 
+    // update minMaxs array to maxs with 0 and mins with n - 1
+    minMaxs[0] = sideLength - 1;
+    minMaxs[1] = sideLength - 1;
+    minMaxs[2] = sideLength - 1;
+    minMaxs[3] = 0;
+    minMaxs[4] = 0;
+    minMaxs[5] = 0;
+    
+    cudaCheckError(cudaMemcpy(cudaDeviceMinMaxs, minMaxs, 6 * sizeof(uint32_t), cudaMemcpyHostToDevice));
+    
+    kernelGetGlobalBounds<<<gridDim, blockDim>>>();
+    
+    cudaCheckError(cudaMemcpy(minMaxs, cudaDeviceMinMaxs, 6 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+}
 
 void 
 GolCuda::advanceFrame() {
+    // moves output to input for the next frame
     cudaCheckError(cudaMemcpy(inputData,
         cudaDeviceOutputData,
         sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8),
         cudaMemcpyDeviceToHost)); 
 
     cudaCheckError(cudaMemcpy(cudaDeviceInputData, inputData, sizeof(uint8_t) * ((sideLength * sideLength * sideLength + 7) / 8), cudaMemcpyHostToDevice));
-    //cudaMemcpyToSymbol(cuConstIterationParams, &params, sizeof(GlobalConstants));
 }
 
 void
-GolCuda::doIteration() {    
-
-    /* printf("sideLength: %lu, numStates: %d, isMoore %d\n", sideLength, numStates, isMoore); */
-    /* printf("ruleset:\n"); */
-    /* for (int i = 0; i < 54; i++) { */
-    /*     printf("%d, ", ruleset[i]); */
-    /* } */
-    /* printf("\ninputData:\n"); */
-    /* for (uint64_t i = 0; i < (sideLength * sideLength * sideLength + 7) / 8; i++) { */
-    /*     std::cout << i << ": " << std::bitset<8>(inputData[i]) << std::endl; */
-    /* } */
-
+GolCuda::doIteration(bool doBoundingBox) {    
     dim3 blockDim(BLOCK_SIZE);
     dim3 gridDim((((sideLength * sideLength * sideLength + 7) / 8) + blockDim.x - 1) / blockDim.x);
 
-    if (isMoore) {
-        kernelDoIterationMoore<<<gridDim, blockDim>>>(); 
-    } else {
-        kernelDoIterationVonNeumann<<<gridDim, blockDim>>>(); 
+    if (doBoundingBox) {
+        uint64_t inBoundsVolume = (1 + minMaxs[3] - minMaxs[0]) * (1 + minMaxs[4] - minMaxs[1]) * (1 + minMaxs[5] - minMaxs[2]);
+        dim3 gridDim((((inBoundsVolume + 7) / 8) + blockDim.x - 1) / blockDim.x);
     }
-      
+
+    // do one iteration
+    if (isMoore) {
+        kernelDoIterationMoore<<<gridDim, blockDim>>>(doBoundingBox); 
+    } else {
+        kernelDoIterationVonNeumann<<<gridDim, blockDim>>>(doBoundingBox); 
+    }  
 }  

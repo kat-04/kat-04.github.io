@@ -3,6 +3,7 @@
 
 #include <cmath>
 
+// defines a Cube type that represents the data for a 3D game of life frame
 struct Cube {
 
     Cube(uint64_t n) {
@@ -19,6 +20,7 @@ struct Cube {
         }
     }
 
+    // clears all data for the cube (resets to 0)
     void clear() {
         uint64_t numVoxels = ((sideLength * sideLength * sideLength + 7) / 8);
         uint8_t* ptr = data;
