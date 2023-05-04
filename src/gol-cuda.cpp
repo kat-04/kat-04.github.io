@@ -48,10 +48,11 @@ int gol_cuda(int argc, char** argv, std::string fileDir) {
     
     // main loop, does each frame with Cuda
     for (int f = 0; f < numFrames; f++) {
-        Timer frameTimer; // timer start
+        
         if (DO_BOUNDING_BOX) {
             golCuda->updateBounds();
         }
+        Timer frameTimer; // timer start
         golCuda->doIteration(DO_BOUNDING_BOX);
         totalSimulationTime += frameTimer.elapsed(); // timer end
 
