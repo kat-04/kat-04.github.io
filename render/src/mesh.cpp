@@ -83,7 +83,11 @@ std::map<int, std::vector<Matrix> > parse_data(std::string path_to_frame, int nu
         Matrix v = MatrixMultiply(MatrixTranslate(std::stof(out[0]), std::stof(out[1]), std::stof(out[2])), shift);
 
         // add to vector
-        vertices[stoi(out[3])].push_back(v);
+        if (num_states > 2) {
+            vertices[stoi(out[3])].push_back(v);
+        } else {
+            vertices[1].push_back(v);
+        }
         out.clear();
     }
 

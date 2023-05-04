@@ -7,10 +7,10 @@ parser = argparse.ArgumentParser(
                     description='Creates input file of vertices with cube of side length n filled')
 
 parser.add_argument('filename')
-parser.add_argument('-s', '--size', type=int)
+parser.add_argument('-n', '--size', type=int)
 parser.add_argument('-o', '--offset', default=0, type=int)
 parser.add_argument('-r', '--rule')
-parser.add_argument('-t', '--state', default=-1, type=int)
+parser.add_argument('-s', '--state', default=-1, type=int)
 parser.add_argument('-d', '--density', default=0.5, type=float)
 
 args = parser.parse_args()

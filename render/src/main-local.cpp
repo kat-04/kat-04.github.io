@@ -81,20 +81,33 @@ int main()
     Vector3 starting_pos = camera.position;
 
     // Cube mesh properties (width, height, length)
-    Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
+    Mesh cube = GenMeshCube(0.999f, 0.999f, 0.999f);
     //--------------------------------------------------------------------------------------
     // SHADERS
     Shader shader = LoadShader(TextFormat("libs/raylib/examples/shaders/resources/shaders/glsl%i/lighting_instancing.vs", GLSL_VERSION),
                                TextFormat("libs/raylib/examples/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
 
-    // Get shader locations
+    /* Shader shader = LoadShader(0, TextFormat("resources/shaders/glsl%i/raymarching.fs", GLSL_VERSION)); */
+
+    // Get shader locations for required uniforms
+    /* int viewEyeLoc = GetShaderLocation(shader, "viewEye"); */
+    /* int viewCenterLoc = GetShaderLocation(shader, "viewCenter"); */
+    /* int runTimeLoc = GetShaderLocation(shader, "runTime"); */
+    /* int resolutionLoc = GetShaderLocation(shader, "resolution"); */
+
+    /* // Get shader locations */
     shader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(shader, "mvp");
     shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
     shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(shader, "instanceTransform");
 
+    /* float resolution[2] = { (float)screenWidth, (float)screenHeight }; */
+    /* SetShaderValue(shader, resolutionLoc, resolution, SHADER_UNIFORM_VEC2); */
+
+    /* float runTime = 0.0f; */
+
     // Set shader value: ambient light level
     int ambientLoc = GetShaderLocation(shader, "ambient");
-    float shader_attr[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    float shader_attr[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
     SetShaderValue(shader, ambientLoc, shader_attr, SHADER_UNIFORM_VEC4);
     //--------------------------------------------------------------------------------------
 
@@ -120,10 +133,13 @@ int main()
     /* for (int i = 0; i < numStates - 1; i++) { */
     /*     mat_color.push_back((Color) { static_cast<unsigned char>(i * (205 / (numStates - 1)) + 50), 0, 0, 255 }); */
     /* } */
-    mat_color.push_back((Color) { 255, 17, 10, 255 });
-    mat_color.push_back((Color) { 230, 34, 221, 229 });
-    mat_color.push_back((Color) { 112, 0, 249, 250 });
-    mat_color.push_back((Color) { 13, 173, 251, 250 });
+    // KEEP IN MIND THESE ARE COLORS IN BACKWARDS ORDER
+    mat_color.push_back((Color) { 57, 255, 20, 255 });
+    /* mat_color.push_back((Color) { 57, 255, 20, 255 }); */
+    /* mat_color.push_back((Color) { 255, 85, 0, 255 }); */
+    /* mat_color.push_back((Color) { 255, 195, 0, 255 }); */
+    /* mat_color.push_back((Color) { 254, 247, 198, 255 }); */
+
 
     Material matInstances[numStates - 1];
     for (int i = 0; i < numStates - 1; i++) {
@@ -132,8 +148,8 @@ int main()
         matInstances[i].maps[MATERIAL_MAP_DIFFUSE].color = mat_color[i];
     }
 
-    Material matDefault = LoadMaterialDefault();
-    matDefault.maps[MATERIAL_MAP_DIFFUSE].color = BLUE;
+    /* Material matDefault = LoadMaterialDefault(); */
+    /* matDefault.maps[MATERIAL_MAP_DIFFUSE].color = BLUE; */
     //--------------------------------------------------------------------------------------
 
 
@@ -207,7 +223,17 @@ int main()
 
         // Update shader and light accordingly to follow camera movement
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
+        /* float cameraTarget[3] = { camera.target.x, camera.target.y, camera.target.z }; */
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
+        
+        /* float deltaTime = GetFrameTime(); */
+        /* runTime += deltaTime; */
+
+        // Set shader required uniform values
+        /* SetShaderValue(shader, viewEyeLoc, cameraPos, SHADER_UNIFORM_VEC3); */
+        /* SetShaderValue(shader, viewCenterLoc, cameraTarget, SHADER_UNIFORM_VEC3); */
+        /* SetShaderValue(shader, runTimeLoc, &runTime, SHADER_UNIFORM_FLOAT); */
+
         light1.position = (Vector3){camera.position.x, camera.position.y, camera.position.z};
         /* light2.position = (Vector3){camera.position.x, camera.position.y, camera.position.z}; */
         /* light3.position = (Vector3){-camera.position.x, camera.position.y, -camera.position.z}; */
@@ -302,7 +328,9 @@ int main()
             /* DrawMesh(cube, matDefault, MatrixTranslate(-camera.position.x, camera.position.y, camera.position.z)); */
             // Draw mesh instances
             for (int i = 0; i < numStates - 1; i++) {
+                /* BeginShaderMode(shader); */
                 DrawMeshInstanced(cube, matInstances[i], transforms.at(i), num_blocks.at(i));
+                /* EndShaderMode(); */
             }
 
             first = false;
@@ -311,11 +339,15 @@ int main()
 
             // Uncomment if you want to see FPS
             DrawFPS(10, 10);
+            /* std::string frame_num = "Frame " + std::to_string(frame + 1); */
+            DrawText(TextFormat("Frame: %i", frame), 10, 40, 25, SKYBLUE);
+
 
         EndDrawing();
         //----------------------------------------------------------------------------------
     }
 
+    UnloadShader(shader);
     CloseWindow();        // Close window and OpenGL context
 
     return 0;
