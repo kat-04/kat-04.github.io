@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<!--
+	Hyperspace by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>3D Conway's Game of Life</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<a href="index.html" class="title">3D Conway's Game of Life</a>
+				<nav>
+					<ul>
+						<li><a href="index.html">Home</a></li>
+						<li><a href="elements.html">Demo</a></li>
+					</ul>
+				</nav>
+			</header>
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Main -->
+					<section id="main" class="wrapper">
+						<div class="inner">
+							<h1 class="major">Final Report</h1>
+                            <h2>Summary</h2>
+							<p>We will be implementing different parallel implementations of Conway’s Game of Life in 3D. We will be
+                                using the NVIDIA GPUs on the GHC machines for our CUDA implementation and the PSC machines
+                                for the OpenMP implementation.</p>
+                            <h2>Background</h2>
+                            <p>Conway’s Game of Life is a Turing complete zero-player cellular automaton, traditionally in 2D, that
+                                simulates basic evolution. After giving an initial configuration of alive or dead cells, the pattern evolves
+                                based on a set number of rules governed by the neighbors of each cell:</p>
+                            <ol>
+                                <li>A cell with <h:math>&le; 1</h:math> living neighbors <i>(underpopulation)</i></li>
+                                <li>A cell with <h:math>&ge; 4</h:math> living neighbors dies <i>(overpopulation)</i></li>
+                                <li>An empty cell with exactly 3 living neighbors becomes alive <i>(reproduction)</i></li>
+                            </ol>
+                            <p><span class="image right"><img src="images/oscillatorExample.jpg" alt="" /></span>Despite this basic ruleset, there have been many different types of patterns found through studies: still lifes, which do not move; oscillators, which have a periodic form of motion; and spaceships, which drift in a consistent manner across space. Some initial patterns can also lead to infinite growth, where the bounding box of the pattern grows at each timestep. One example of a basic oscillator is shown to the right.</p>
+                            <p>Conway's Game of Life is fairly simple in 2D, as there are only 8 neighbors and 2 axes (x- and y-axis). However, adapting to 3D -- increasing the number of neighbors from 8 to 26 and multiplying the size of the grid by another factor -- greatly increases communication intensity. Furthermore, the z-axis can now be an added area of parallelism.</p>
+                            <p>Another area for potential speedup is the idea converging or stable structures that form in Conway's Game of Life. In the 2D model, all starting states gradually converged to stable structures. Similarly, in 3D, all starting states will also generally remain stable after a certain time, meaning that there will be no need to pass information about empty spaces around unless they are immediate neighbors.</p>
+                            
+                            </div>
+                        </div>
+					</section>
+
+			</div>
+
+		<!-- Footer -->
+			<footer id="footer" class="wrapper alt">
+				<div class="inner">
+					<ul class="menu">
+						<li>&copy; Untitled. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+					</ul>
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
