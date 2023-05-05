@@ -98,8 +98,8 @@
                             <p><i>Note: Some lines may stop at 500 and not continue to 2000 because the time spent running the test case was too long. The persistent test case on Von Neumann, which was the fastest to run on 2000, had a simulation time of 1800 seconds (30 minutes), not counting the file I/O.</i></p>
                             <div class="box alt">
                                 <div class="row gtr-uniform">
-                                    <div class="col-1"><span class="image fit"><img src="images/final_moore_times.png" alt="" /></span></div>
-                                    <div class="col-2"><span class="image fit"><img src="images/final_vn_times.png" alt="" /></span></div>
+                                    <div class="col-12"><span class="image fit"><img src="images/final_moore_times.png" alt="" /></span></div>
+                                    <div class="col-34"><span class="image fit"><img src="images/final_vn_times.png" alt="" /></span></div>
                                 </div>
                             </div>
                             <p>These two graphs only consider computation time of each implementation. We can immediately notice that CUDA is significantly faster on average for all test cases. This is especially noticeable with the checkerboard and decay test cases, as they are more dense. OpenMP performs slightly worse than CUDA but still significantly faster than sequential on sparser cases. However, it reaches or sometimes surpasses sequential on extremely dense cases. We can also notice that the speedup over sequential increases exponentially for CUDA and OpenMP (for sparse cases).</p>
@@ -107,8 +107,8 @@
                             <p>As the inherent definition of Moore and Von Neumann neighborhoods are different, the rulesets and starting configurations also slightly differ for each test case. However, the checkerboard test case is the same for both neighborhoods. Directly comparing the run times between both neighborhood implementations on the checkerboard test case, we are able to see that the Von Neumann implementation is slightly faster than the Moore implementation, something that is expected as the number of neighbors for Von Neumann is less than that of Moore.</p>
                             <div class="box alt">
                                 <div class="row gtr-uniform">
-                                    <div class="col-1"><span class="image fit"><img src="images/final_overall_moore_times.png" alt="" /></span></div>
-                                    <div class="col-2"><span class="image fit"><img src="images/final_overall_vn_times.png" alt="" /></span></div>
+                                    <div class="col-12"><span class="image fit"><img src="images/final_overall_moore_times.png" alt="" /></span></div>
+                                    <div class="col-34"><span class="image fit"><img src="images/final_overall_vn_times.png" alt="" /></span></div>
                                 </div>
                             </div>
                         </div>
