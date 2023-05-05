@@ -54,8 +54,8 @@ int main()
 {
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth = 1600;
-    const int screenHeight = 900;
+    const int screenWidth = 2880;
+    const int screenHeight = 1160;
 
     //--------------------------------------------------------------------------------------
     // LOAD VALUES
@@ -67,13 +67,13 @@ int main()
 
     // Set logging method and configuration
     SetTraceLogCallback(log);
-    SetConfigFlags(FLAG_MSAA_4X_HINT); // if available
+    /* SetConfigFlags(FLAG_MSAA_4X_HINT); // if available */
     InitWindow(screenWidth, screenHeight, "3D Conway's Game of Life");
 
     // Initialize the camera
     /* Vector3 starting_pos = (Vector3){ 30.0f, 10.0f, 10.0f }; */
     Camera3D camera = { 0 };
-    camera.position = (Vector3) { 0, size / 4.f, 2.f * size };
+    camera.position = (Vector3) { 0, size / 4.f, 2.2f * size };
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
     camera.fovy = 45.0f;                                // Camera field-of-view Y
@@ -81,7 +81,7 @@ int main()
     Vector3 starting_pos = camera.position;
 
     // Cube mesh properties (width, height, length)
-    Mesh cube = GenMeshCube(0.999f, 0.999f, 0.999f);
+    Mesh cube = GenMeshCube(1.01f, 1.01f, 1.01f);
     //--------------------------------------------------------------------------------------
     // SHADERS
     Shader shader = LoadShader(TextFormat("libs/raylib/examples/shaders/resources/shaders/glsl%i/lighting_instancing.vs", GLSL_VERSION),
@@ -107,7 +107,7 @@ int main()
 
     // Set shader value: ambient light level
     int ambientLoc = GetShaderLocation(shader, "ambient");
-    float shader_attr[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    float shader_attr[4] = { 4.5f, 4.5f, 4.4f, 4.f };
     SetShaderValue(shader, ambientLoc, shader_attr, SHADER_UNIFORM_VEC4);
     //--------------------------------------------------------------------------------------
 
@@ -117,8 +117,9 @@ int main()
 
     // Color of the light: can either be preset or custom: (Color){ r, g, b, alpha }
     // Where 0 <= r, g, b, alpha <= 255 and alpha is opacity
-    Color light_color = (Color) { 255, 255, 255, 100 };
+    Color light_color = (Color) { 255, 255, 255, 255 };
     Light light1 = CreateLight(LIGHT_POINT, camera.position, Vector3Zero(), light_color, shader);
+    /* Light light2 = CreateLight(LIGHT_POINT, Vector3Negate(camera.position), camera.up, light_color, shader); */
     /* /1* Color light_color2 = (Color) { 208, 106, 252, 255 }; *1/ */
     /* Light light2 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader); */
     /* Light light3 = CreateLight(LIGHT_DIRECTIONAL, camera.position, Vector3Zero(), light_color, shader); */
@@ -134,11 +135,31 @@ int main()
     /*     mat_color.push_back((Color) { static_cast<unsigned char>(i * (205 / (numStates - 1)) + 50), 0, 0, 255 }); */
     /* } */
     // KEEP IN MIND THESE ARE COLORS IN BACKWARDS ORDER
-    mat_color.push_back((Color) { 57, 255, 20, 255 });
-    /* mat_color.push_back((Color) { 57, 255, 20, 255 }); */
-    /* mat_color.push_back((Color) { 255, 85, 0, 255 }); */
-    /* mat_color.push_back((Color) { 255, 195, 0, 255 }); */
-    /* mat_color.push_back((Color) { 254, 247, 198, 255 }); */
+    /* mat_color.push_back((Color) { 0, 200, 255, 255 }); */
+
+    /* mat_color.push_back((Color) { 64, 63,  }); */ 
+    /* mat_color.push_back((Color) { 87, 20, 15, 87 }); */
+    /* mat_color.push_back((Color) { 255, 8, 0, 255 }); */
+    /* mat_color.push_back((Color) { 255, 168, 38, 255 }); */
+    /* mat_color.push_back((Color) { 255, 237, 166, 255 }); */
+    /* mat_color.push_back((Color) { 102, 13, 184, 183 }); */
+    /* mat_color.push_back((Color) { 189, 6, 40, 188 }); */
+    /* mat_color.push_back((Color) { 255, 0, 0, 255 }); */
+    /* mat_color.push_back((Color) { 255, 94, 0, 255 }); */
+    /* mat_color.push_back((Color) { 255, 158, 3, 255 }); */
+
+    mat_color.push_back((Color) { 255, 255, 218, 255 });
+    mat_color.push_back((Color) { 255, 244, 140, 255 });
+    mat_color.push_back((Color) { 250, 199, 47, 250 });
+    mat_color.push_back((Color) { 250, 115, 1, 250 });
+    mat_color.push_back((Color) { 214, 32, 32, 214 });
+    /* mat_color.push_back((Color) { 132, 15, 138, 138 }); */
+    /* mat_color.push_back((Color) { 66, 0, 148, 148 }); */
+    mat_color.push_back((Color) { 87, 0, 1, 87 });
+    mat_color.push_back((Color) { 87, 0, 1, 87 });
+    mat_color.push_back((Color) { 25, 33, 48, 48 });
+    /* mat_color.push_back((Color) { 9, 12, 14, 14 }); */
+    mat_color.push_back((Color) { 9, 12, 14, 14 });
 
 
     Material matInstances[numStates - 1];
@@ -234,8 +255,9 @@ int main()
         /* SetShaderValue(shader, viewCenterLoc, cameraTarget, SHADER_UNIFORM_VEC3); */
         /* SetShaderValue(shader, runTimeLoc, &runTime, SHADER_UNIFORM_FLOAT); */
 
-        light1.position = (Vector3){camera.position.x, camera.position.y, camera.position.z};
-        /* light2.position = (Vector3){camera.position.x, camera.position.y, camera.position.z}; */
+        /* light1.position = Vector3RotateByAxisAngle(camera.position, (Vector3) {sqrt(2.f) / 2.f, 0, sqrt(2.f) / 2.f}, 2 * PI/3.f); */
+        /* light2.position = Vector3RotateByAxisAngle(light1.position, (Vector3) {0, -1, 0},  PI); */
+        light1.position = (Vector3){sqrt(2.f) * camera.position.x / 2.f, 4 * camera.position.y,  -2 * camera.position.z / 2.f};
         /* light3.position = (Vector3){-camera.position.x, camera.position.y, -camera.position.z}; */
         /* light4.position = (Vector3){camera.position.x, camera.position.y, -camera.position.z}; */
         UpdateLightValues(shader, light1);
@@ -324,7 +346,7 @@ int main()
             // Draw outline (bounding box)
             /* std::cout << "Origin: (" << origin.x << ", " << origin.y << ", " << origin.z << ")" << std::endl; */
             /* std::cout << "Size: " << size << std::endl; */
-            DrawCubeWires(origin, size, size, size, RED);
+            /* DrawCubeWires(origin, size, size, size, DARKBLUE); */
             /* DrawMesh(cube, matDefault, MatrixTranslate(-camera.position.x, camera.position.y, camera.position.z)); */
             // Draw mesh instances
             for (int i = 0; i < numStates - 1; i++) {
@@ -338,9 +360,9 @@ int main()
             EndMode3D();
 
             // Uncomment if you want to see FPS
-            DrawFPS(10, 10);
+            /* DrawFPS(10, 10); */
             /* std::string frame_num = "Frame " + std::to_string(frame + 1); */
-            DrawText(TextFormat("Frame: %i", frame), 10, 40, 25, SKYBLUE);
+            /* DrawText(TextFormat("Frame: %i", frame), 10, 40, 25, SKYBLUE); */
 
 
         EndDrawing();

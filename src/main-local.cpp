@@ -2,8 +2,8 @@
 #include <string>
 #include "gol-sequential.h"
 /* #include "gol-cuda.cpp" */
-#include "gol-openmp.h" 
-/* #include "gol-openmp-states.h" */
+/* #include "gol-openmp.h" */ 
+#include "gol-openmp-states.h"
 
 // runs game of life for parsed arguments on local computer
 int main(int argc, char** argv)
@@ -26,12 +26,12 @@ int main(int argc, char** argv)
         /* if (version == "cuda") { */
         /*     return gol_cuda(argc, argv, outputDir); */
         /* } */
-        if (version == "omp") {
-            return golOpenMP(argc, argv, outputDir);
-        }
-        /* if (version == "states") { */
-        /*     return golOpenMPStates(argc, argv, outputDir); */
+        /* if (version == "omp") { */
+        /*     return golOpenMP(argc, argv, outputDir); */
         /* } */
+        if (version == "states") {
+            return golOpenMPStates(argc, argv, outputDir);
+        }
     }
     cerr << "Usage: " << argv[0] << " input_file number_of_frames side_length version:[seq(default)/cuda/omp/states]" << endl;
     return 1;
