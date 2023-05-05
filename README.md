@@ -1,3 +1,11 @@
+# Summary
+
+We created three 3D Conway's Game of Life implementations: sequential C++, parallel CUDA, and parallel OpenMP to compare the speedup. We also created a renderer using raylib, an OpenGL wrapper, to visualize our 3D results.
+
+# Report
+
+A detailed final report with our approach and results can be found on our website [here](https://kat-04.github.io).
+
 # Rendering
 
 ## Installation/Run Process
