@@ -58,7 +58,7 @@ The initial state of the scene is with an orbital camera and automatic frame inc
 
 To change the camera mode between free/orbiting, press `C` for camera.
 
-To change the automatic frames to manual frames (mainly for debugging), press `F` for frame.
+To change the automatic frames to manual frames (mainly for debugging), press `F` for frame. To reset the frames to frame 0 (beginning), press `R` for reset.
 
 To view the bounding box, press `B` for box (default is off).
 
