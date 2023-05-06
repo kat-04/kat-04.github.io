@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 #include "gol-sequential.h"
-/* #include "gol-cuda.cpp" */
-/* #include "gol-openmp.h" */ 
+// #include "gol-cuda.cpp" // Uncomment if your machine has cuda installed
+#include "gol-openmp.h" 
 #include "gol-openmp-states.h"
 
 // runs game of life for parsed arguments on local computer
@@ -23,12 +23,12 @@ int main(int argc, char** argv)
         if (version == "seq") {
             return golSequential(argc, argv, outputDir);
         }
-        /* if (version == "cuda") { */
-        /*     return gol_cuda(argc, argv, outputDir); */
-        /* } */
-        /* if (version == "omp") { */
-        /*     return golOpenMP(argc, argv, outputDir); */
-        /* } */
+        // if (version == "cuda") {
+        //     return gol_cuda(argc, argv, outputDir);
+        // }
+        if (version == "omp") {
+            return golOpenMP(argc, argv, outputDir);
+        }
         if (version == "states") {
             return golOpenMPStates(argc, argv, outputDir);
         }

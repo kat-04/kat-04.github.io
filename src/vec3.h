@@ -1,3 +1,6 @@
+#ifndef __VEC3_H
+#define __VEC3_H
+
 #include <stdint.h>
 #include <ostream>
 
@@ -34,3 +37,5 @@ struct Vec3 {
         return out;
     }
 };
+
+#endif
