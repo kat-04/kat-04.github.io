@@ -2,7 +2,7 @@
 #include <string>
 #include "gol-sequential.h"
 #include "gol-cuda.cpp"
-#include "gol-openmp.h"
+#include "gol-openmp-ambient.h"
 #include "timing.h"
 
 // runs game of life for parsed arguments on ghc machines
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
         }
         if (version == "omp") {
             Timer totalTimer;
-            result = golOpenMP(argc, argv, outputDir);
+            result = golOpenMPAmbient(argc, argv, outputDir);
             std::cout << "Total OpenMP time: " << totalTimer.elapsed() << "s" << std::endl;
         }
         return result;
